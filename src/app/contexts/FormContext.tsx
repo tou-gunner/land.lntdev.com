@@ -5,43 +5,90 @@ import { createContext, useContext, useState, ReactNode, useCallback } from "rea
 // Define the shape of our form data
 interface FormData {
   land: {
-    landParcelNumber: string;
-    oldLandParcelNumber: string;
-    landMapNumber: string;
-    oldLandMapNumber: string;
-    landUseType: string;
-    landZone: string;
-    cityPlanningZone: string;
-    valuationZone: string;
-    roadType: string;
-    isGovernmentLand: boolean;
-    owner: string;
-    disputeType: string;
+    parcelno: string;
+    parcelno_old: string;
+    cadastremapno: string;
+    cadastremapno_old: string;
+    landusetype: string;
+    landusezone: string;
+    urbanizationlevel: string;
+    landvaluezone_number: string;
+    roadtype: string;
+    isstate: boolean;
+    purpose: string;
+    status: string;
     area: string;
     landOwnerName: string;
-    additionalNotes: string;
+    additionalstatements: string;
+    // Address fields
+    province: string;
+    district: string;
+    village: string;
+    unit: string;
+    road: string;
     [key: string]: any;
   };
   owner: {
     ownerType: 'person' | 'entity';
-    personData?: any;
-    entityData?: any;
+    personData?: {
+      title: string;
+      firstname: string;
+      lastname: string;
+      birthdate: string;
+      nationality: string;
+      occupation: string;
+      idcardno: string;
+      idcarddate: string;
+      governmentplace: string;
+      familybookno: string;
+      fathername: string;
+      mothername: string;
+      spousename: string;
+      spousebirthdate: string;
+      spousenationality: string;
+      spouseoccupation: string;
+      spousefathername: string;
+      spousemothername: string;
+      province: string;
+      district: string;
+      village: string;
+      unit: string;
+      street: string;
+      houseno: string;
+    };
+    entityData?: {
+      title: string;
+      fullname: string;
+      entitytype: string;
+      regno: string;
+      regdate: string;
+      businesstype: string;
+      nationality: string;
+      governmentplace: string;
+      companyname: string;
+      province: string;
+      district: string;
+      village: string;
+      unit: string;
+      road: string;
+      houseno: string;
+    };
     [key: string]: any;
   };
   landright: {
-    ownershipStatus: string;
-    landCertificateNumber: string;
-    issueNumber: string;
-    landRegistryBookNumber: string;
-    landRegistryNumber: string;
-    landUseType: string;
-    landAcquisitionMethod: string;
+    righttype: string;
+    landtitleno: string;
+    issueno: string;
+    registerbookno: string;
+    registerno: string;
+    approvaltype: string;
+    lthistory: string;
     portion: string;
-    landCertificateDate: string;
-    landCertificateDeliveryDate: string;
-    classificationDate: string;
-    printDate: string;
-    announcementDate: string;
+    landtitledate: string;
+    landtitledeliverydate: string;
+    classificationdate: string;
+    printdate: string;
+    announcementdate: string;
     [key: string]: any;
   };
 }
@@ -73,39 +120,44 @@ export function FormProvider({ children }: { children: ReactNode }) {
   // Initialize form state
   const [formData, setFormData] = useState<FormData>({
     land: {
-      landParcelNumber: "",
-      oldLandParcelNumber: "",
-      landMapNumber: "",
-      oldLandMapNumber: "",
-      landUseType: "",
-      landZone: "",
-      cityPlanningZone: "",
-      valuationZone: "",
-      roadType: "",
-      isGovernmentLand: false,
-      owner: "",
-      disputeType: "",
+      parcelno: "",
+      parcelno_old: "",
+      cadastremapno: "",
+      cadastremapno_old: "",
+      landusetype: "",
+      landusezone: "",
+      urbanizationlevel: "",
+      landvaluezone_number: "",
+      roadtype: "",
+      isstate: false,
+      purpose: "",
+      status: "",
       area: "",
       landOwnerName: "",
-      additionalNotes: "",
+      additionalstatements: "",
+      province: "",
+      district: "",
+      village: "",
+      unit: "",
+      road: "",
     },
     owner: {
       ownerType: 'person',
     },
     landright: {
-      ownershipStatus: "",
-      landCertificateNumber: "",
-      issueNumber: "",
-      landRegistryBookNumber: "",
-      landRegistryNumber: "",
-      landUseType: "",
-      landAcquisitionMethod: "",
+      righttype: "",
+      landtitleno: "",
+      issueno: "",
+      registerbookno: "",
+      registerno: "",
+      approvaltype: "",
+      lthistory: "",
       portion: "",
-      landCertificateDate: "",
-      landCertificateDeliveryDate: "",
-      classificationDate: "",
-      printDate: "",
-      announcementDate: "",
+      landtitledate: "",
+      landtitledeliverydate: "",
+      classificationdate: "",
+      printdate: "",
+      announcementdate: "",
     }
   });
 
@@ -117,7 +169,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
       ...prev,
       land: landData
     }));
-    setIsGovernmentLandState(landData.isGovernmentLand);
+    setIsGovernmentLandState(landData.isstate);
   }, []);
 
   // Handler for owner form updates

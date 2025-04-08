@@ -7,7 +7,11 @@ import {
   useGetLandUseTypesQuery, 
   useGetRoadTypesQuery, 
   useGetDisputeTypesQuery,
-  useSearchLandParcelQuery
+  useSearchLandParcelQuery,
+  useSaveParcelMutation,
+  useGetProvincesQuery,
+  useGetDistrictsQuery,
+  useGetVillagesQuery
 } from "../redux/api/apiSlice";
 
 interface ZoneItem {
@@ -34,11 +38,26 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
 
   const [searchTrigger, setSearchTrigger] = useState(false);
   
+  // Add state for save status
+  const [saveStatus, setSaveStatus] = useState<{success?: boolean; message?: string} | null>(null);
+  
   // Use RTK Query hooks for data fetching
   const { data: landZones = [], isLoading: zonesLoading } = useGetLandUseZonesQuery();
   const { data: landUseTypes = [], isLoading: typesLoading } = useGetLandUseTypesQuery();
   const { data: roadTypes = [], isLoading: roadTypesLoading } = useGetRoadTypesQuery();
   const { data: disputeTypes = [], isLoading: disputeTypesLoading } = useGetDisputeTypesQuery();
+  
+  // Add save parcel mutation
+  const [saveParcel, { isLoading: isSaving }] = useSaveParcelMutation();
+  
+  // Location data
+  const { data: provinces = [], isLoading: provincesLoading } = useGetProvincesQuery();
+  const { data: districts = [], isLoading: districtsLoading } = useGetDistrictsQuery(contextFormData.land.province, {
+    skip: !contextFormData.land.province
+  });
+  const { data: villages = [], isLoading: villagesLoading } = useGetVillagesQuery(contextFormData.land.district, {
+    skip: !contextFormData.land.district
+  });
   
   // Only run the search query when triggered
   const { 
@@ -59,19 +78,29 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
     if (hasSearchResults && searchTrigger) {
       const parcelData = searchResult.data[0];
       
-      // Create a new formData object
+      // Create a new formData object with field names matching API parameters
       const newFormData = {
         ...contextFormData.land,
-        landParcelNumber: parcelData.parcelno || "",
-        landMapNumber: parcelData.cadastremapno || "",
-        oldLandParcelNumber: parcelData.parcelno_old || "",
-        oldLandMapNumber: parcelData.cadastremapno_old || "",
-        landUseType: parcelData.landusetype?.toString() || "",
-        landZone: parcelData.landusezone?.toString() || "",
-        roadType: parcelData.roadtype?.toString() || "",
-        isGovernmentLand: parcelData.isstate || false,
+        parcelno: parcelData.parcelno || "",
+        cadastremapno: parcelData.cadastremapno || "",
+        parcelno_old: parcelData.parcelno_old || "",
+        cadastremapno_old: parcelData.cadastremapno_old || "",
+        landusetype: parcelData.landusetype?.toString() || "",
+        landusezone: parcelData.landusezone?.toString() || "",
+        urbanizationlevel: parcelData.urbanizationlevel || "",
+        landvaluezone_number: parcelData.landvaluezone_number || "",
+        roadtype: parcelData.roadtype?.toString() || "",
+        isstate: parcelData.isstate || false,
+        purpose: parcelData.purpose || "",
+        status: parcelData.status || "",
         area: parcelData.area?.toString() || "",
-        additionalNotes: parcelData.additionalstatements || ""
+        additionalstatements: parcelData.additionalstatements || "",
+        // Address fields
+        province: parcelData.province || "",
+        district: parcelData.district || "",
+        village: parcelData.villagecode || "",
+        unit: parcelData.unit || "",
+        road: parcelData.road || ""
       };
       
       // Update the context directly
@@ -91,7 +120,15 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
     // Create a new form data object by copying the current context data
     const updatedFormData = { ...contextFormData.land };
     
-    if (type === "checkbox") {
+    // Handle cascading selection for location fields
+    if (name === "province") {
+      updatedFormData[name] = value;
+      updatedFormData["district"] = "";
+      updatedFormData["village"] = "";
+    } else if (name === "district") {
+      updatedFormData[name] = value;
+      updatedFormData["village"] = "";
+    } else if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
       updatedFormData[name] = checked;
     } else {
@@ -119,10 +156,57 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
     setSearchTrigger(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(contextFormData.land);
-    // Submit the form data to your API
+    
+    // Reset save status
+    setSaveStatus(null);
+    
+    try {
+      // Create API compatible data object - now field names already match
+      const apiData = {
+        // Required fields
+        parcelno: contextFormData.land.parcelno,
+        cadastremapno: contextFormData.land.cadastremapno,
+        isstate: contextFormData.land.isstate,
+        
+        // Optional fields - Field names already match API parameters
+        parcelno_old: contextFormData.land.parcelno_old || null,
+        cadastremapno_old: contextFormData.land.cadastremapno_old || null,
+        landusetype: contextFormData.land.landusetype ? parseInt(contextFormData.land.landusetype) : null,
+        landusezone: contextFormData.land.landusezone || null,
+        urbanizationlevel: contextFormData.land.urbanizationlevel || null,
+        landvaluezone_number: contextFormData.land.landvaluezone_number ? parseInt(contextFormData.land.landvaluezone_number) : null,
+        roadtype: contextFormData.land.roadtype ? parseInt(contextFormData.land.roadtype) : null,
+        purpose: contextFormData.land.purpose || null,
+        status: contextFormData.land.status ? parseInt(contextFormData.land.status) : null,
+        area: contextFormData.land.area ? parseFloat(contextFormData.land.area) : null,
+        additionalstatements: contextFormData.land.additionalstatements || null,
+        
+        // Address fields
+        province: contextFormData.land.province || null,
+        district: contextFormData.land.district || null,
+        village: contextFormData.land.village || null,
+        unit: contextFormData.land.unit || null,
+        road: contextFormData.land.road || null
+      };
+      
+      // Send data to API
+      const result = await saveParcel(apiData).unwrap();
+      
+      // Handle response
+      if (result.success) {
+        setSaveStatus({ success: true, message: "ບັນທຶກຂໍ້ມູນສຳເລັດ" });
+      } else {
+        setSaveStatus({ success: false, message: result.message || "ບັນທຶກຂໍ້ມູນບໍ່ສຳເລັດ" });
+      }
+    } catch (error) {
+      console.error("Error saving parcel:", error);
+      setSaveStatus({ 
+        success: false, 
+        message: error instanceof Error ? error.message : "ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຂໍ້ມູນ" 
+      });
+    }
   };
 
   // Fallback options for dropdowns in case API fails
@@ -193,14 +277,14 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Old Land Parcel Number */}
           <div className="form-group">
-            <label htmlFor="oldLandParcelNumber" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="parcelno_old" className="block mb-2 font-semibold text-black dark:text-white">
               ເລກທີຕອນດິນເກົ່າ:
             </label>
             <input
               type="text"
-              id="oldLandParcelNumber"
-              name="oldLandParcelNumber"
-              value={contextFormData.land.oldLandParcelNumber}
+              id="parcelno_old"
+              name="parcelno_old"
+              value={contextFormData.land.parcelno_old}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -208,14 +292,14 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
           
           {/* Old Land Map Number */}
           <div className="form-group">
-            <label htmlFor="oldLandMapNumber" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="cadastremapno_old" className="block mb-2 font-semibold text-black dark:text-white">
               ເລກທີແຜນທີ່ຕາດິນເກົ່າ:
             </label>
             <input
               type="text"
-              id="oldLandMapNumber"
-              name="oldLandMapNumber"
-              value={contextFormData.land.oldLandMapNumber}
+              id="cadastremapno_old"
+              name="cadastremapno_old"
+              value={contextFormData.land.cadastremapno_old}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -223,13 +307,13 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
           
           {/* Land Use Type */}
           <div className="form-group">
-            <label htmlFor="landUseType" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="landusetype" className="block mb-2 font-semibold text-black dark:text-white">
               ປະເພດການນຳໃຊ້ທີ່ດິນ:
             </label>
             <select
-              id="landUseType"
-              name="landUseType"
-              value={contextFormData.land.landUseType}
+              id="landusetype"
+              name="landusetype"
+              value={contextFormData.land.landusetype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={typesLoading}
@@ -249,13 +333,13 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
           
           {/* Land Zone */}
           <div className="form-group">
-            <label htmlFor="landZone" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="landusezone" className="block mb-2 font-semibold text-black dark:text-white">
               ເຂດທີ່ດິນ:
             </label>
             <select
-              id="landZone"
-              name="landZone"
-              value={contextFormData.land.landZone}
+              id="landusezone"
+              name="landusezone"
+              value={contextFormData.land.landusezone}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={zonesLoading}
@@ -275,13 +359,13 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
           
           {/* City Planning Zone */}
           <div className="form-group">
-            <label htmlFor="cityPlanningZone" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="urbanizationlevel" className="block mb-2 font-semibold text-black dark:text-white">
               ເຂດຕາມຜັງເມືອງ:
             </label>
             <select
-              id="cityPlanningZone"
-              name="cityPlanningZone"
-              value={contextFormData.land.cityPlanningZone}
+              id="urbanizationlevel"
+              name="urbanizationlevel"
+              value={contextFormData.land.urbanizationlevel}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             >
@@ -296,14 +380,14 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
           
           {/* Valuation Zone */}
           <div className="form-group">
-            <label htmlFor="valuationZone" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="landvaluezone_number" className="block mb-2 font-semibold text-black dark:text-white">
               ເຂດປະເມີນລາຄາ:
             </label>
             <input
               type="text"
-              id="valuationZone"
-              name="valuationZone"
-              value={contextFormData.land.valuationZone}
+              id="landvaluezone_number"
+              name="landvaluezone_number"
+              value={contextFormData.land.landvaluezone_number}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -311,13 +395,13 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
           
           {/* Road Type */}
           <div className="form-group">
-            <label htmlFor="roadType" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="roadtype" className="block mb-2 font-semibold text-black dark:text-white">
               ປະເພດຖະໜົນ:
             </label>
             <select
-              id="roadType"
-              name="roadType"
-              value={contextFormData.land.roadType}
+              id="roadtype"
+              name="roadtype"
+              value={contextFormData.land.roadtype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={roadTypesLoading}
@@ -340,42 +424,42 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <div className="flex items-center mt-6">
               <input
                 type="checkbox"
-                id="isGovernmentLand"
-                name="isGovernmentLand"
-                checked={contextFormData.land.isGovernmentLand}
+                id="isstate"
+                name="isstate"
+                checked={contextFormData.land.isstate}
                 onChange={handleChange}
                 className="form-checkbox h-5 w-5 dark:bg-gray-700"
               />
-              <label htmlFor="isGovernmentLand" className="ml-2 font-semibold text-black dark:text-white">
+              <label htmlFor="isstate" className="ml-2 font-semibold text-black dark:text-white">
                 ດິນລັດ
               </label>
             </div>
           </div>
           
-          {/* Owner */}
+          {/* Purpose */}
           <div className="form-group">
-            <label htmlFor="owner" className="block mb-2 font-semibold text-black dark:text-white">
-              ເປົ້ານາຍ:
+            <label htmlFor="purpose" className="block mb-2 font-semibold text-black dark:text-white">
+              ເປົ້າໝາຍ:
             </label>
             <input
               type="text"
-              id="owner"
-              name="owner"
-              value={contextFormData.land.owner}
+              id="purpose"
+              name="purpose"
+              value={contextFormData.land.purpose}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
           </div>
           
-          {/* Dispute Type */}
+          {/* Status (Dispute Type) */}
           <div className="form-group">
-            <label htmlFor="disputeType" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="status" className="block mb-2 font-semibold text-black dark:text-white">
               ປະເພດຂໍ້ຂົດແຍ່ງ:
             </label>
             <select
-              id="disputeType"
-              name="disputeType"
-              value={contextFormData.land.disputeType}
+              id="status"
+              name="status"
+              value={contextFormData.land.status}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={disputeTypesLoading}
@@ -426,27 +510,148 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
         
         {/* Additional Notes */}
         <div className="form-group">
-          <label htmlFor="additionalNotes" className="block mb-2 font-semibold text-black dark:text-white">
+          <label htmlFor="additionalstatements" className="block mb-2 font-semibold text-black dark:text-white">
             ຄຳຊີ້ແຈງເພີ່ມເຕີມ:
           </label>
           <textarea
-            id="additionalNotes"
-            name="additionalNotes"
-            value={contextFormData.land.additionalNotes}
+            id="additionalstatements"
+            name="additionalstatements"
+            value={contextFormData.land.additionalstatements}
             onChange={handleChange}
             rows={4}
             className="form-textarea w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
           ></textarea>
         </div>
         
+        {/* Address Section */}
+        <div className="mt-8">
+          <h3 className="text-xl font-bold mb-4 text-black dark:text-white">ທີ່ຢູ່:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Province */}
+            <div className="form-group">
+              <label htmlFor="province" className="block mb-2 font-semibold text-black dark:text-white">
+                ແຂວງ:
+              </label>
+              <select
+                id="province"
+                name="province"
+                value={contextFormData.land.province}
+                onChange={handleChange}
+                className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+                disabled={provincesLoading}
+              >
+                <option value="">ເລືອກແຂວງ</option>
+                {provincesLoading ? (
+                  <option value="">ກຳລັງໂຫຼດ...</option>
+                ) : (
+                  provinces.map((province) => (
+                    <option key={province.provincecode} value={province.provincecode}>
+                      {province.province_lao}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+            
+            {/* District */}
+            <div className="form-group">
+              <label htmlFor="district" className="block mb-2 font-semibold text-black dark:text-white">
+                ເມືອງ:
+              </label>
+              <select
+                id="district"
+                name="district"
+                value={contextFormData.land.district}
+                onChange={handleChange}
+                className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+                disabled={districtsLoading || !contextFormData.land.province}
+              >
+                <option value="">ເລືອກເມືອງ</option>
+                {districtsLoading ? (
+                  <option value="">ກຳລັງໂຫຼດ...</option>
+                ) : (
+                  districts.map((district) => (
+                    <option key={district.districtcode} value={district.districtcode}>
+                      {district.district_lao}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+            
+            {/* Village */}
+            <div className="form-group">
+              <label htmlFor="village" className="block mb-2 font-semibold text-black dark:text-white">
+                ບ້ານ:
+              </label>
+              <select
+                id="village"
+                name="village"
+                value={contextFormData.land.village}
+                onChange={handleChange}
+                className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+                disabled={villagesLoading || !contextFormData.land.district}
+              >
+                <option value="">ເລືອກບ້ານ</option>
+                {villagesLoading ? (
+                  <option value="">ກຳລັງໂຫຼດ...</option>
+                ) : (
+                  villages.map((village) => (
+                    <option key={village.villageid} value={village.villageid}>
+                      {village.villagename}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+            
+            {/* Unit */}
+            <div className="form-group">
+              <label htmlFor="unit" className="block mb-2 font-semibold text-black dark:text-white">
+                ໜ່ວຍ:
+              </label>
+              <input
+                type="text"
+                id="unit"
+                name="unit"
+                value={contextFormData.land.unit}
+                onChange={handleChange}
+                className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            
+            {/* Road */}
+            <div className="form-group">
+              <label htmlFor="road" className="block mb-2 font-semibold text-black dark:text-white">
+                ຖະໜົນ:
+              </label>
+              <input
+                type="text"
+                id="road"
+                name="road"
+                value={contextFormData.land.road}
+                onChange={handleChange}
+                className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+          </div>
+        </div>
+        
         <div className="flex justify-end">
           <button
             type="submit"
             className="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded shadow-sm transition-colors"
+            disabled={isSaving}
           >
-            ບັນທຶກ
+            {isSaving ? "ກຳລັງບັນທຶກ..." : "ບັນທຶກ"}
           </button>
         </div>
+        
+        {saveStatus && (
+          <div className={`mt-4 p-3 rounded-md ${saveStatus.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {saveStatus.message}
+          </div>
+        )}
       </form>
     </div>
   );

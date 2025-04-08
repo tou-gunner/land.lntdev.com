@@ -16,30 +16,30 @@ interface TransformedItem {
 }
 
 interface PersonFormData {
-  prefix: string;
-  firstName: string;
-  lastName: string;
-  birthDate: string;
+  title: string;
+  firstname: string;
+  lastname: string;
+  birthdate: string;
   nationality: string;
   occupation: string;
-  idCardNumber: string;
-  idCardDate: string;
-  governmentWorkplace: string;
-  familyBookNumber: string;
-  fatherName: string;
-  motherName: string;
-  spouseName: string;
-  spouseBirthDate: string;
-  spouseFatherName: string;
-  spouseMotherName: string;
-  spouseNationality: string;
-  spouseOccupation: string;
+  idcardno: string;
+  idcarddate: string;
+  governmentplace: string;
+  familybookno: string;
+  fathername: string;
+  mothername: string;
+  spousename: string;
+  spousebirthdate: string;
+  spousefathername: string;
+  spousemothername: string;
+  spousenationality: string;
+  spouseoccupation: string;
   province: string;
   district: string;
   village: string;
   unit: string;
   street: string;
-  houseNumber: string;
+  houseno: string;
 }
 
 interface PersonFormProps {
@@ -60,30 +60,30 @@ export default function PersonForm({
   onChange
 }: PersonFormProps) {
   const [formData, setFormData] = useState<PersonFormData>({
-    prefix: "",
-    firstName: "",
-    lastName: "",
-    birthDate: "",
+    title: "",
+    firstname: "",
+    lastname: "",
+    birthdate: "",
     nationality: "",
     occupation: "",
-    idCardNumber: "",
-    idCardDate: "",
-    governmentWorkplace: "",
-    familyBookNumber: "",
-    fatherName: "",
-    motherName: "",
-    spouseName: "",
-    spouseBirthDate: "",
-    spouseNationality: "",
-    spouseOccupation: "",
-    spouseFatherName: "",
-    spouseMotherName: "",
+    idcardno: "",
+    idcarddate: "",
+    governmentplace: "",
+    familybookno: "",
+    fathername: "",
+    mothername: "",
+    spousename: "",
+    spousebirthdate: "",
+    spousefathername: "",
+    spousemothername: "",
+    spousenationality: "",
+    spouseoccupation: "",
     province: "",
     district: "",
     village: "",
     unit: "",
     street: "",
-    houseNumber: "",
+    houseno: "",
     ...initialData,
     ...(propFormData || {}) // Initialize with propFormData if provided
   });
@@ -164,8 +164,8 @@ export default function PersonForm({
             </label>
             <select
               id="prefix"
-              name="prefix"
-              value={formData.prefix}
+              name="title"
+              value={formData.title}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingTitles}
@@ -189,8 +189,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="firstName"
-              value={formData.firstName}
+              name="firstname"
+              value={formData.firstname}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               required
@@ -203,8 +203,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="lastName"
-              value={formData.lastName}
+              name="lastname"
+              value={formData.lastname}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               required
@@ -219,8 +219,8 @@ export default function PersonForm({
             </label>
             <input
               type="date"
-              name="birthDate"
-              value={formData.birthDate}
+              name="birthdate"
+              value={formData.birthdate}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -260,8 +260,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="idCardNumber"
-              value={formData.idCardNumber}
+              name="idcardno"
+              value={formData.idcardno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -273,8 +273,8 @@ export default function PersonForm({
             </label>
             <input
               type="date"
-              name="idCardDate"
-              value={formData.idCardDate}
+              name="idcarddate"
+              value={formData.idcarddate}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -287,8 +287,8 @@ export default function PersonForm({
               ສະຖານທີ່ເຮັດວຽກຂອງລັດ
             </label>
             <select
-              name="governmentWorkplace"
-              value={formData.governmentWorkplace}
+              name="governmentplace"
+              value={formData.governmentplace}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingMinistries}
@@ -313,8 +313,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="familyBookNumber"
-              value={formData.familyBookNumber}
+              name="familybookno"
+              value={formData.familybookno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -328,8 +328,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="fatherName"
-              value={formData.fatherName}
+              name="fathername"
+              value={formData.fathername}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -341,8 +341,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="motherName"
-              value={formData.motherName}
+              name="mothername"
+              value={formData.mothername}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -358,8 +358,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="spouseName"
-              value={formData.spouseName}
+              name="spousename"
+              value={formData.spousename}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -371,8 +371,8 @@ export default function PersonForm({
             </label>
             <input
               type="date"
-              name="spouseBirthDate"
-              value={formData.spouseBirthDate}
+              name="spousebirthdate"
+              value={formData.spousebirthdate}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -386,8 +386,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="spouseFatherName"
-              value={formData.spouseFatherName}
+              name="spousefathername"
+              value={formData.spousefathername}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -399,8 +399,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="spouseMotherName"
-              value={formData.spouseMotherName}
+              name="spousemothername"
+              value={formData.spousemothername}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -414,8 +414,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="spouseNationality"
-              value={formData.spouseNationality}
+              name="spousenationality"
+              value={formData.spousenationality}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -427,8 +427,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="spouseOccupation"
-              value={formData.spouseOccupation}
+              name="spouseoccupation"
+              value={formData.spouseoccupation}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -544,8 +544,8 @@ export default function PersonForm({
             </label>
             <input
               type="text"
-              name="houseNumber"
-              value={formData.houseNumber}
+              name="houseno"
+              value={formData.houseno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />

@@ -237,6 +237,15 @@ export const apiSlice = createApi({
       query: ({ cadastreMapNo, parcelNo }) => 
         `/parcel/find?parcelno=${parcelNo}&cadastremapno=${cadastreMapNo}`
     }),
+
+    // Save Land Parcel
+    saveParcel: builder.mutation<any, any>({
+      query: (parcelData) => ({
+        url: '/parcel/save',
+        method: 'POST',
+        body: parcelData,
+      }),
+    }),
   }),
 })
 
@@ -255,5 +264,6 @@ export const {
   useGetRightTypesQuery,
   useGetLandTitleHistoryQuery,
   useGetTitlesQuery,
-  useSearchLandParcelQuery
+  useSearchLandParcelQuery,
+  useSaveParcelMutation
 } = apiSlice; 

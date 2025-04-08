@@ -46,22 +46,22 @@ interface EntityFormProps {
 
 export default function EntityForm({ formData: propFormData, onChange, onSubmit }: EntityFormProps) {
   const [formData, setFormData] = useState({
-    prefix: "",
-    fullName: "",
-    entityType: "",
-    registrationNumber: "",
-    registrationDate: "",
-    businessType: "",
+    title: "",
+    fullname: "",
+    entitytype: "",
+    regno: "",
+    regdate: "",
+    businesstype: "",
     nationality: "",
-    governmentWorkplace: "",
-    companyName: "",
+    governmentplace: "",
+    companyname: "",
     // Address fields
     province: "",
     district: "",
     village: "",
     unit: "",
     road: "",
-    houseNumber: "",
+    houseno: "",
     ...(propFormData || {}) // Initialize with propFormData if provided
   });
 
@@ -140,13 +140,13 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Prefix */}
           <div className="form-group">
-            <label htmlFor="prefix" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="title" className="block mb-2 font-semibold text-black dark:text-white">
               ຄຳນຳຫນ້ານາມ:
             </label>
             <select
-              id="prefix"
-              name="prefix"
-              value={formData.prefix}
+              id="title"
+              name="title"
+              value={formData.title}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingTitles}
@@ -166,14 +166,14 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
           
           {/* Full Name */}
           <div className="form-group">
-            <label htmlFor="fullName" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="fullname" className="block mb-2 font-semibold text-black dark:text-white">
               ຊື່ ແລະ ນາມສະກຸນ:
             </label>
             <input
               type="text"
-              id="fullName"
-              name="fullName"
-              value={formData.fullName}
+              id="fullname"
+              name="fullname"
+              value={formData.fullname}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -181,13 +181,13 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
           
           {/* Entity Type */}
           <div className="form-group">
-            <label htmlFor="entityType" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="entitytype" className="block mb-2 font-semibold text-black dark:text-white">
               ປະເພດນິຕິບຸກຄົນ:
             </label>
             <select
-              id="entityType"
-              name="entityType"
-              value={formData.entityType}
+              id="entitytype"
+              name="entitytype"
+              value={formData.entitytype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingEntityTypes}
@@ -207,14 +207,14 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
           
           {/* Registration Number */}
           <div className="form-group">
-            <label htmlFor="registrationNumber" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="regno" className="block mb-2 font-semibold text-black dark:text-white">
               ເລກທະບຽນ:
             </label>
             <input
               type="text"
-              id="registrationNumber"
-              name="registrationNumber"
-              value={formData.registrationNumber}
+              id="regno"
+              name="regno"
+              value={formData.regno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -222,14 +222,14 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
           
           {/* Registration Date */}
           <div className="form-group">
-            <label htmlFor="registrationDate" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="regdate" className="block mb-2 font-semibold text-black dark:text-white">
               ວັນທີຂຶ້ນທະບຽນ:
             </label>
             <input
               type="date"
-              id="registrationDate"
-              name="registrationDate"
-              value={formData.registrationDate}
+              id="regdate"
+              name="regdate"
+              value={formData.regdate}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -237,13 +237,13 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
           
           {/* Business Type */}
           <div className="form-group">
-            <label htmlFor="businessType" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="businesstype" className="block mb-2 font-semibold text-black dark:text-white">
               ປະເພດທຸລະກິດ:
             </label>
             <select
-              id="businessType"
-              name="businessType"
-              value={formData.businessType}
+              id="businesstype"
+              name="businesstype"
+              value={formData.businesstype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingBusinessTypes}
@@ -278,13 +278,13 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
           
           {/* Government Workplace */}
           <div className="form-group">
-            <label htmlFor="governmentWorkplace" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="governmentplace" className="block mb-2 font-semibold text-black dark:text-white">
               ສະຖານທີ່ເຮັດວຽກຂອງລັດ:
             </label>
             <select
-              id="governmentWorkplace"
-              name="governmentWorkplace"
-              value={formData.governmentWorkplace}
+              id="governmentplace"
+              name="governmentplace"
+              value={formData.governmentplace}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingMinistries}
@@ -304,14 +304,14 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
           
           {/* Company Name */}
           <div className="form-group">
-            <label htmlFor="companyName" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="companyname" className="block mb-2 font-semibold text-black dark:text-white">
               ຊື່ບໍລິສັດ:
             </label>
             <input
               type="text"
-              id="companyName"
-              name="companyName"
-              value={formData.companyName}
+              id="companyname"
+              name="companyname"
+              value={formData.companyname}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -432,14 +432,14 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
             
             {/* House Number */}
             <div className="form-group">
-              <label htmlFor="houseNumber" className="block mb-2 font-semibold text-black dark:text-white">
+              <label htmlFor="houseno" className="block mb-2 font-semibold text-black dark:text-white">
                 ເຮືອນເລກທີ:
               </label>
               <input
                 type="text"
-                id="houseNumber"
-                name="houseNumber"
-                value={formData.houseNumber}
+                id="houseno"
+                name="houseno"
+                value={formData.houseno}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               />
