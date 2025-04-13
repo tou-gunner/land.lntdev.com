@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { ThemeProvider } from "./components/ThemeProvider";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { ReduxProvider } from "./redux/provider";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -23,11 +16,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased">
+        <ReduxProvider>
+          <ThemeProvider defaultTheme="system" storageKey="land3-theme">
+            <header className="sticky top-0 z-10 w-full p-4 flex justify-between items-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="flex items-center space-x-4">
+                <div className="text-xl font-bold text-blue-800 dark:text-blue-400">
+                  ລະບົບທີ່ດິນ
+                </div>
+                <nav className="hidden md:flex space-x-6 ml-8">
+                  <Link href="/" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">
+                    ໜ້າຫຼັກ
+                  </Link>
+                  <Link href="/land-management" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">
+                    ຈັດການຂໍ້ມູນທີ່ດິນ
+                  </Link>
+                </nav>
+              </div>
+              <ThemeToggle />
+            </header>
+            <main className="container mx-auto pt-4 pb-12">{children}</main>
+          </ThemeProvider>
+        </ReduxProvider>
       </body>
     </html>
   );

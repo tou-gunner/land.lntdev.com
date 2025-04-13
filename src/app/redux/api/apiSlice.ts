@@ -1,0 +1,259 @@
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+// Define interface types for consistent data handling
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+interface ApiItem {
+  id: number | string;
+  description_lao: string;
+  description_english: string;
+  [key: string]: any;
+}
+
+interface TransformedItem {
+  id: number | string;
+  name: string;
+  englishName?: string;
+}
+
+interface Province {
+  provincecode: string;
+  province_english: string;
+  province_lao: string;
+}
+
+interface District {
+  districtcode: string;
+  district_english: string;
+  district_lao: string;
+}
+
+interface Village {
+  provinceid: string;
+  provincename: string;
+  districtid: string;
+  districtname: string;
+  villageid: string;
+  villagename: string;
+}
+
+// Create the API slice
+export const apiSlice = createApi({
+  reducerPath: 'api',
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || '' 
+  }),
+  tagTypes: ['Land', 'Person', 'Entity', 'LandRight'],
+  endpoints: (builder) => ({
+    // Provinces
+    getProvinces: builder.query<Province[], void>({
+      query: () => '/utility/provinces',
+      transformResponse: (response: ApiResponse<Province[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data;
+        }
+        return [];
+      }
+    }),
+
+    // Districts by Province
+    getDistricts: builder.query<District[], string>({
+      query: (provinceCode) => `/utility/districts?province=${provinceCode}`,
+      transformResponse: (response: ApiResponse<District[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data;
+        }
+        return [];
+      }
+    }),
+
+    // Villages by District
+    getVillages: builder.query<Village[], string>({
+      query: (districtCode) => `/utility/villages?district=${districtCode}`,
+      transformResponse: (response: ApiResponse<Village[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data;
+        }
+        return [];
+      }
+    }),
+
+    // Land Use Zones
+    getLandUseZones: builder.query<TransformedItem[], void>({
+      query: () => '/utility/landusezone',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Land Use Types
+    getLandUseTypes: builder.query<TransformedItem[], void>({
+      query: () => '/utility/landuse',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Road Types
+    getRoadTypes: builder.query<TransformedItem[], void>({
+      query: () => '/utility/streetcategories',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Dispute Types
+    getDisputeTypes: builder.query<TransformedItem[], void>({
+      query: () => '/utility/ltstatus',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Entity Types
+    getEntityTypes: builder.query<TransformedItem[], void>({
+      query: () => '/utility/entitytypes',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Business Types
+    getBusinessTypes: builder.query<TransformedItem[], void>({
+      query: () => '/utility/businesstypes',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Ministries
+    getMinistries: builder.query<TransformedItem[], void>({
+      query: () => '/utility/ministries',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Right Types
+    getRightTypes: builder.query<TransformedItem[], void>({
+      query: () => '/utility/righttypes',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Land Title History
+    getLandTitleHistory: builder.query<TransformedItem[], void>({
+      query: () => '/utility/lthistory',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Titles (Prefixes)
+    getTitles: builder.query<TransformedItem[], void>({
+      query: () => '/utility/titles',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Search Land Parcel
+    searchLandParcel: builder.query<any, { cadastreMapNo: string, parcelNo: string }>({
+      query: ({ cadastreMapNo, parcelNo }) => 
+        `/parcel/find?parcelno=${parcelNo}&cadastremapno=${cadastreMapNo}`
+    }),
+  }),
+})
+
+// Export hooks for usage in components
+export const {
+  useGetProvincesQuery,
+  useGetDistrictsQuery,
+  useGetVillagesQuery,
+  useGetLandUseZonesQuery,
+  useGetLandUseTypesQuery,
+  useGetRoadTypesQuery,
+  useGetDisputeTypesQuery,
+  useGetEntityTypesQuery,
+  useGetBusinessTypesQuery,
+  useGetMinistriesQuery,
+  useGetRightTypesQuery,
+  useGetLandTitleHistoryQuery,
+  useGetTitlesQuery,
+  useSearchLandParcelQuery
+} = apiSlice; 

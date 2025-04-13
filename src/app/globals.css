@@ -1,8 +1,36 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@100..900&family=Phetsarath:wght@400;700&display=swap');
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  /* Base colors */
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #000000;
+  
+  /* UI colors */
+  --card-background: #ffffff;
+  --card-foreground: #000000;
+  --input-background: #ffffff;
+  --input-border: rgba(0, 0, 0, 0.1);
+  --input-focus-ring: #3b82f6;
+  
+  /* Button colors */
+  --primary-button: #3b82f6;
+  --primary-button-hover: #2563eb;
+  --primary-button-text: #ffffff;
+  --secondary-button: #f3f4f6;
+  --secondary-button-hover: #e5e7eb;
+  --secondary-button-text: #111827;
+  
+  /* Accent colors */
+  --accent-color: #3b82f6;
+  --accent-color-light: #93c5fd;
+  --accent-color-dark: #1d4ed8;
+  
+  /* Border colors */
+  --border-color: rgba(0, 0, 0, 0.1);
+  --border-color-hover: rgba(0, 0, 0, 0.2);
 }
 
 @theme inline {
@@ -12,15 +40,58 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  /* Base colors */
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+  
+  /* UI colors */
+  --card-background: #1a1a1a;
+  --card-foreground: #ffffff;
+  --input-background: #1a1a1a;
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-focus-ring: #3b82f6;
+  
+  /* Button colors */
+  --primary-button: #3b82f6;
+  --primary-button-hover: #2563eb;
+  --primary-button-text: #ffffff;
+  --secondary-button: #374151;
+  --secondary-button-hover: #4b5563;
+  --secondary-button-text: #ffffff;
+  
+  /* Accent colors */
+  --accent-color: #3b82f6;
+  --accent-color-light: #60a5fa;
+  --accent-color-dark: #2563eb;
+  
+  /* Border colors */
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-color-hover: rgba(255, 255, 255, 0.2);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Noto Sans Lao", Arial, Helvetica, sans-serif;
+}
+
+/* Form styling */
+input, select, textarea {
+  background-color: var(--input-background);
+  border: 1px solid var(--input-border);
+  color: var(--foreground);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px var(--accent-color-light);
+}
+
+/* Card styling */
+.card {
+  background-color: var(--card-background);
+  color: var(--card-foreground);
+  border: 1px solid var(--border-color);
 }
