@@ -32,6 +32,12 @@ export default function RootLayout({
                   <Link href="/land-management" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">
                     ຈັດການຂໍ້ມູນທີ່ດິນ
                   </Link>
+                  <Link href="/documents-list" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">
+                    ລາຍການເອກະສານ
+                  </Link>
+                  <Link href="/document-types" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">
+                    ຈັດການເອກະສານ
+                  </Link>
                 </nav>
               </div>
               <ThemeToggle />

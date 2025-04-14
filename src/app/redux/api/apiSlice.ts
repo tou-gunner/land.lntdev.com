@@ -50,33 +50,45 @@ export const apiSlice = createApi({
   tagTypes: ['Land', 'Person', 'Entity', 'LandRight'],
   endpoints: (builder) => ({
     // Provinces
-    getProvinces: builder.query<Province[], void>({
+    getProvinces: builder.query<{ id: string, name: string, value: string }[], void>({
       query: () => '/utility/provinces',
       transformResponse: (response: ApiResponse<Province[]>) => {
         if (response?.success && Array.isArray(response.data)) {
-          return response.data;
+          return response.data.map(province => ({
+            id: province.provincecode,
+            name: province.province_lao || province.province_english,
+            value: province.province_lao || province.province_english
+          }));
         }
         return [];
       }
     }),
 
     // Districts by Province
-    getDistricts: builder.query<District[], string>({
+    getDistricts: builder.query<{ id: string, name: string, value: string }[], string>({
       query: (provinceCode) => `/utility/districts?province=${provinceCode}`,
       transformResponse: (response: ApiResponse<District[]>) => {
         if (response?.success && Array.isArray(response.data)) {
-          return response.data;
+          return response.data.map(district => ({
+            id: district.districtcode,
+            name: district.district_lao || district.district_english,
+            value: district.district_lao || district.district_english
+          }));
         }
         return [];
       }
     }),
 
     // Villages by District
-    getVillages: builder.query<Village[], string>({
+    getVillages: builder.query<{ id: string, name: string, value: string }[], string>({
       query: (districtCode) => `/utility/villages?district=${districtCode}`,
       transformResponse: (response: ApiResponse<Village[]>) => {
         if (response?.success && Array.isArray(response.data)) {
-          return response.data;
+          return response.data.map(village => ({
+            id: village.villageid,
+            name: village.villagename,
+            value: village.villagename
+          }));
         }
         return [];
       }
