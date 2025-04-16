@@ -8,34 +8,13 @@ import OwnerAndRightForm from '../components/OwnerAndRightForm';
 import { FormProvider, useFormContext } from "../contexts/FormContext";
 import SplitViewPdfViewer from '../components/SplitViewPdfViewer';
 
-// Component to demonstrate accessing form state from context
-function FormLogger() {
-  const { formData } = useFormContext();
-
-  // Log form data when it changes
-  const logFormData = () => {
-    console.log('Current Form State:', formData);
-  };
-
-  return (
-    <div className="mb-4 text-right">
-      <button 
-        onClick={logFormData}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        Log Form State
-      </button>
-    </div>
-  );
-}
-
 // Main content component that uses the form context
 function LandManagementContent() {
   const [activeTab, setActiveTab] = useState<'land' | 'ownership'>('land');
   const searchParams = useSearchParams();
   const parcelParam = searchParams.get('parcel');
   const { updateLandForm, formData } = useFormContext();
-  const [splitLayout, setSplitLayout] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [splitLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
   
   // Check for parcel parameter and set it as initial active tab if present
@@ -54,11 +33,6 @@ function LandManagementContent() {
     setActiveTab(tab);
   };
   
-  // Toggle split layout orientation
-  const toggleSplitLayout = () => {
-    setSplitLayout(splitLayout === 'horizontal' ? 'vertical' : 'horizontal');
-  };
-  
   // Generate PDF URL
   const getPdfUrl = () => {
     return `${apiBaseUrl}/parcel/pdf?parcel=${formData?.land?.barcode}`;
@@ -66,32 +40,6 @@ function LandManagementContent() {
 
   return (
     <div className="">
-      <h1 className="text-3xl font-bold mb-6 text-center">ລະບົບຈັດການຂໍ້ມູນທີ່ດິນ</h1>
-      
-      {/* Top controls with form logger and layout toggle */}
-      <div className="flex justify-between mb-4">
-        <div className="flex gap-2">
-          {formData?.land?.barcode && (
-            <button
-              onClick={toggleSplitLayout}
-              className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center"
-              title={splitLayout === 'horizontal' ? "ສະແດງແບບແນວຕັ້ງ" : "ສະແດງແບບແນວນອນ"}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {splitLayout === 'horizontal' ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                )}
-              </svg>
-              {splitLayout === 'horizontal' ? 'ແນວຕັ້ງ' : 'ແນວນອນ'}
-            </button>
-          )}
-        </div>
-        
-        <FormLogger />
-      </div>
-      
       {/* Always use split view when parcel is selected */}
       {formData?.land?.barcode ? (
         <SplitViewPdfViewer

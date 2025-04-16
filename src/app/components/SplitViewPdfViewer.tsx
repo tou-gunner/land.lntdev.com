@@ -62,7 +62,7 @@ export default function SplitViewPdfViewer({
 
   return (
     <div 
-      className="border rounded-lg overflow-hidden"
+      className="border overflow-hidden"
       style={{ 
         height,
         backgroundColor: 'var(--card-background)',

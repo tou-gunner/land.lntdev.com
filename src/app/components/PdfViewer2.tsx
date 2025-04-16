@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Document, Page } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -22,27 +22,46 @@ export default function PdfViewer2({ pdfUrl, height = '500px', showControls = tr
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  const [pageWidth, setPageWidth] = useState<number>(600);
+  const [pageWidth, setPageWidth] = useState<number>(0);
   const [scale, setScale] = useState<number>(1.0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Set initial page width based on container size
+  // Update page width based on container size
   useEffect(() => {
-    // Set initial page width based on container size
-    setPageWidth(Math.min(600, window.innerWidth - 50));
-
-    // Update page width on window resize
-    const handleResize = () => {
-      setPageWidth(Math.min(600, window.innerWidth - 50));
+    const updatePageWidth = () => {
+      if (containerRef.current) {
+        // Set page width to container width minus padding
+        const containerWidth = containerRef.current.clientWidth - 20;
+        setPageWidth(containerWidth);
+      }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    // Initial update
+    updatePageWidth();
+    
+    // Update on window resize
+    window.addEventListener('resize', updatePageWidth);
+    
+    // Small delay to ensure container is fully rendered
+    const timeoutId = setTimeout(updatePageWidth, 100);
+    
+    return () => {
+      window.removeEventListener('resize', updatePageWidth);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
     setPageNumber(1);
     setLoading(false);
+    
+    // Update width after document loads
+    if (containerRef.current) {
+      const containerWidth = containerRef.current.clientWidth - 20;
+      setPageWidth(containerWidth);
+    }
   }
 
   function changePage(offset: number) {
@@ -70,9 +89,9 @@ export default function PdfViewer2({ pdfUrl, height = '500px', showControls = tr
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900" style={{ height, overflow: 'auto' }}>
+    <div ref={containerRef} className="flex flex-col h-full bg-white dark:bg-gray-900" style={{ height }}>
       {showControls && numPages > 0 && (
-        <div className="flex flex-col justify-center items-center gap-2 py-2 border-b border-gray-200 dark:border-gray-700 mb-2">
+        <div className="sticky top-0 z-10 flex justify-center items-center gap-2 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="flex justify-center items-center gap-3">
             <button
               disabled={pageNumber <= 1}
@@ -127,39 +146,45 @@ export default function PdfViewer2({ pdfUrl, height = '500px', showControls = tr
         </div>
       )}
       
-      {loading && (
-        <div className="flex justify-center items-center py-10">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      )}
-      
-      {error && (
-        <div className="text-red-500 text-center py-5">
-          ບໍ່ສາມາດໂຫຼດ PDF ໄດ້: {error.message}
-        </div>
-      )}
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto">
+        {loading && (
+          <div className="flex justify-center items-center py-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="text-red-500 text-center py-5">
+            ບໍ່ສາມາດໂຫຼດ PDF ໄດ້: {error.message}
+          </div>
+        )}
 
-      <Document
-        file={pdfUrl}
-        onLoadSuccess={onDocumentLoadSuccess}
-        onLoadError={(err) => {
-          setError(err);
-          setLoading(false);
-        }}
-        loading={null}
-        className="pdf-document"
-      >
-        <Page 
-          pageNumber={pageNumber} 
-          renderTextLayer={false}
-          renderAnnotationLayer={false}
-          className={`mx-auto ${theme === 'dark' ? 'invert filter brightness-90 contrast-95' : ''}`}
-          loading={null}
-          scale={scale}
-          width={pageWidth}
-          canvasBackground={theme === 'dark' ? '#333' : 'transparent'}
-        />
-      </Document>
+        <div className="flex-1 flex justify-center px-2 py-4">
+          <Document
+            file={pdfUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={(err) => {
+              setError(err);
+              setLoading(false);
+            }}
+            loading={null}
+            className="pdf-document"
+          >
+            {pageWidth > 0 && (
+              <Page 
+                pageNumber={pageNumber} 
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+                className={`${theme === 'dark' ? 'invert filter brightness-90 contrast-95' : ''}`}
+                loading={null}
+                scale={scale}
+                width={pageWidth}
+                canvasBackground={theme === 'dark' ? '#333' : 'transparent'}
+              />
+            )}
+          </Document>
+        </div>
+      </div>
     </div>
   );
 }
