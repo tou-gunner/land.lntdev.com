@@ -454,8 +454,8 @@ export default function PersonForm({
                 <option value="">ກຳລັງໂຫຼດ...</option>
               ) : (
                 provinces.map((province) => (
-                  <option key={province.provincecode} value={province.provincecode}>
-                    {province.province_lao}
+                  <option key={province.id} value={province.id}>
+                    {province.name}
                   </option>
                 ))
               )}
@@ -478,8 +478,8 @@ export default function PersonForm({
                 <option value="">ກຳລັງໂຫຼດ...</option>
               ) : (
                 districts.map((district) => (
-                  <option key={district.districtcode} value={district.districtcode}>
-                    {district.district_lao}
+                  <option key={district.id} value={district.id}>
+                    {district.name}
                   </option>
                 ))
               )}
@@ -502,8 +502,8 @@ export default function PersonForm({
                 <option value="">ກຳລັງໂຫຼດ...</option>
               ) : (
                 villages.map((village) => (
-                  <option key={village.villageid} value={village.villageid}>
-                    {village.villagename}
+                    <option key={village.id} value={village.id}>
+                    {village.name}
                   </option>
                 ))
               )}

@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ReduxProvider } from "./redux/provider";
+import { FontLoader } from "./components/FontLoader";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -17,7 +18,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body className="antialiased">
+        <FontLoader />
         <ReduxProvider>
           <ThemeProvider defaultTheme="system" storageKey="land3-theme">
             <header className="sticky top-0 z-10 w-full p-4 flex justify-between items-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
@@ -38,11 +44,14 @@ export default function RootLayout({
                   <Link href="/document-types" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">
                     ຈັດການເອກະສານ
                   </Link>
+                  <Link href="/pdf-snap-demo" className="text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">
+                    ສາທິດ PDF
+                  </Link>
                 </nav>
               </div>
               <ThemeToggle />
             </header>
-            <main className="container mx-auto pt-4 pb-12">{children}</main>
+            <main className="mx-auto pt-4 pb-12">{children}</main>
           </ThemeProvider>
         </ReduxProvider>
       </body>

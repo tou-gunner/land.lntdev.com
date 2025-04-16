@@ -284,7 +284,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="parcelno_old"
               name="parcelno_old"
-              value={contextFormData.land.parcelno_old}
+              value={contextFormData.land.parcelno_old || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -299,7 +299,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="cadastremapno_old"
               name="cadastremapno_old"
-              value={contextFormData.land.cadastremapno_old}
+              value={contextFormData.land.cadastremapno_old || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -387,7 +387,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="landvaluezone_number"
               name="landvaluezone_number"
-              value={contextFormData.land.landvaluezone_number}
+              value={contextFormData.land.landvaluezone_number || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -426,7 +426,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                 type="checkbox"
                 id="isstate"
                 name="isstate"
-                checked={contextFormData.land.isstate}
+                checked={contextFormData.land.isstate || false}
                 onChange={handleChange}
                 className="form-checkbox h-5 w-5 dark:bg-gray-700"
               />
@@ -445,7 +445,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="purpose"
               name="purpose"
-              value={contextFormData.land.purpose}
+              value={contextFormData.land.purpose || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -459,7 +459,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <select
               id="status"
               name="status"
-              value={contextFormData.land.status}
+              value={contextFormData.land.status || ""}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={disputeTypesLoading}
@@ -486,7 +486,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="number"
               id="area"
               name="area"
-              value={contextFormData.land.area}
+              value={contextFormData.land.area || "0"}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -501,7 +501,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="landOwnerName"
               name="landOwnerName"
-              value={contextFormData.land.landOwnerName}
+              value={contextFormData.land.landOwnerName || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -516,7 +516,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
           <textarea
             id="additionalstatements"
             name="additionalstatements"
-            value={contextFormData.land.additionalstatements}
+            value={contextFormData.land.additionalstatements || ""}
             onChange={handleChange}
             rows={4}
             className="form-textarea w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
@@ -535,7 +535,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               <select
                 id="province"
                 name="province"
-                value={contextFormData.land.province}
+                value={contextFormData.land.province || ""}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
                 disabled={provincesLoading}
@@ -545,8 +545,8 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                   <option value="">ກຳລັງໂຫຼດ...</option>
                 ) : (
                   provinces.map((province) => (
-                    <option key={province.provincecode} value={province.provincecode}>
-                      {province.province_lao}
+                    <option key={province.id} value={province.id}>
+                      {province.name}
                     </option>
                   ))
                 )}
@@ -561,7 +561,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               <select
                 id="district"
                 name="district"
-                value={contextFormData.land.district}
+                value={contextFormData.land.district || ""}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
                 disabled={districtsLoading || !contextFormData.land.province}
@@ -571,8 +571,8 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                   <option value="">ກຳລັງໂຫຼດ...</option>
                 ) : (
                   districts.map((district) => (
-                    <option key={district.districtcode} value={district.districtcode}>
-                      {district.district_lao}
+                    <option key={district.id} value={district.id}>
+                      {district.name}
                     </option>
                   ))
                 )}
@@ -587,7 +587,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               <select
                 id="village"
                 name="village"
-                value={contextFormData.land.village}
+                value={contextFormData.land.village || ""}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
                 disabled={villagesLoading || !contextFormData.land.district}
@@ -597,8 +597,8 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                   <option value="">ກຳລັງໂຫຼດ...</option>
                 ) : (
                   villages.map((village) => (
-                    <option key={village.villageid} value={village.villageid}>
-                      {village.villagename}
+                    <option key={village.id} value={village.id}>
+                      {village.name}
                     </option>
                   ))
                 )}
@@ -614,7 +614,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                 type="text"
                 id="unit"
                 name="unit"
-                value={contextFormData.land.unit}
+                value={contextFormData.land.unit || ""}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               />
@@ -629,7 +629,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                 type="text"
                 id="road"
                 name="road"
-                value={contextFormData.land.road}
+                value={contextFormData.land.road || ""}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               />

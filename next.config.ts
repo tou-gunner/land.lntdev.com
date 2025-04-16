@@ -10,6 +10,14 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  webpack: (config) => {
+    // Add support for loading PDF.js worker from node_modules
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'pdfjs-dist': require.resolve('pdfjs-dist'),
+    };
+    return config;
+  },
 };
 
 export default nextConfig;

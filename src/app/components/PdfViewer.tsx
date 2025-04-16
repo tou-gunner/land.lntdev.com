@@ -1,12 +1,42 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Document, Page, pdfjs } from 'react-pdf';
+import dynamic from 'next/dynamic';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Set up the worker for PDF.js
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Import PDF.js worker as recommended in official documentation
+// This needs to be done once before using react-pdf components
+import { pdfjs } from 'react-pdf';
+
+// Use an older, more compatible version of PDF.js worker (2.4.456)
+// that doesn't require Promise.withResolvers
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.worker.min.js`;
+
+// Dynamically import react-pdf components with fallback UI
+const Document = dynamic(
+  () => import('react-pdf').then(mod => mod.Document),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+);
+
+const Page = dynamic(
+  () => import('react-pdf').then(mod => mod.Page),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex justify-center items-center h-32">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+);
 
 interface PdfViewerProps {
   pdfUrl: string;
@@ -245,54 +275,67 @@ const PdfViewer = ({
       )}
 
       <div 
-        className={`w-full border-0 rounded overflow-hidden ${typeof height === 'string' ? 'h-[' + height + ']' : `h-[${height}px]`}`}
+        className={`w-full overflow-hidden ${typeof height === 'string' ? 'h-[' + height + ']' : `h-[${height}px]`}`}
         ref={pdfContainerRef}
       >
-        {pdfUrl ? (
-          <Document
-            file={pdfUrl}
-            onLoadSuccess={handleDocumentLoadSuccess}
-            onLoadError={handleDocumentLoadError}
-            loading={<div className="flex items-center justify-center h-full">ກຳລັງໂຫຼດ PDF...</div>}
-            error={<div className="flex items-center justify-center h-full">ບໍ່ສາມາດໂຫຼດ PDF ໄດ້</div>}
+        {loading && !error && (
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="flex justify-center items-center h-full bg-red-50 text-red-500 p-4 rounded">
+            <p>{error}</p>
+          </div>
+        )}
+        
+        {!error && (
+          <div
+            style={{ 
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transformOrigin: '0 0',
+              cursor: isDragging ? 'grabbing' : scale > 1 ? 'grab' : 'default'
+            }}
+            className="transition-transform duration-100 ease-out"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
           >
-            <div 
-              className={`relative ${scale > 1 ? 'cursor-grab' : ''} ${isDragging ? 'cursor-grabbing' : ''}`}
-              style={{ 
-                transform: `translate(${position.x}px, ${position.y}px)`,
-                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-                width: 'fit-content',
-                height: 'fit-content',
-                margin: '0 auto'
-              }}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseLeave}
+            <Document
+              file={pdfUrl}
+              onLoadSuccess={handleDocumentLoadSuccess}
+              onLoadError={handleDocumentLoadError}
+              loading={
+                <div className="flex justify-center items-center h-full">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              }
+              error={
+                <div className="flex justify-center items-center h-full bg-red-50 text-red-500 p-4 rounded">
+                  <p>ບໍ່ສາມາດໂຫຼດ PDF ໄດ້</p>
+                </div>
+              }
             >
               <Page 
                 pageNumber={currentPage} 
                 width={undefined}
-                height={typeof height === 'number' ? height - 100 : Math.max(300, window.innerHeight - 500)}
-                renderAnnotationLayer={false}
-                renderTextLayer={false}
+                height={undefined}
+                scale={1} // We handle scaling at the container level
                 rotate={rotation}
-                scale={scale}
+                renderAnnotationLayer={true}
+                renderTextLayer={true}
+                loading={
+                  <div className="flex justify-center items-center h-32">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                }
               />
-            </div>
-          </Document>
-        ) : (
-          <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-700">
-            {loading ? "ກຳລັງໂຫຼດ PDF..." : error || "PDF ບໍ່ມີ"}
+            </Document>
           </div>
         )}
       </div>
-
-      {scale > 1 && (
-        <div className="text-center text-sm text-gray-500 mt-2">
-          <span>Zoom: {Math.round(scale * 100)}% • ຄລິກແລະລາກເພື່ອເລື່ອນ</span>
-        </div>
-      )}
     </div>
   );
 };

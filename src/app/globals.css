@@ -1,43 +1,54 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@100..900&family=Phetsarath:wght@400;700&display=swap');
+/* Remove the old font import since we're using the embed method */
+/* @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@100..900&family=Phetsarath:wght@400;700&display=swap'); */
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  /* Base colors */
-  --background: #ffffff;
-  --foreground: #000000;
-  
-  /* UI colors */
-  --card-background: #ffffff;
-  --card-foreground: #000000;
-  --input-background: #ffffff;
-  --input-border: rgba(0, 0, 0, 0.1);
-  --input-focus-ring: #3b82f6;
-  
-  /* Button colors */
-  --primary-button: #3b82f6;
-  --primary-button-hover: #2563eb;
-  --primary-button-text: #ffffff;
-  --secondary-button: #f3f4f6;
-  --secondary-button-hover: #e5e7eb;
-  --secondary-button-text: #111827;
-  
-  /* Accent colors */
-  --accent-color: #3b82f6;
-  --accent-color-light: #93c5fd;
-  --accent-color-dark: #1d4ed8;
-  
-  /* Border colors */
-  --border-color: rgba(0, 0, 0, 0.1);
-  --border-color-hover: rgba(0, 0, 0, 0.2);
+@layer theme {
+  :root {
+    /* Fonts configuration */
+    --font-noto-sans-lao: 'Noto Sans Lao', sans-serif;
+    --font-phetsarath: 'Phetsarath', sans-serif;
+    --font-sans: var(--font-noto-sans-lao);
+    
+    /* Base colors */
+    --background: #ffffff;
+    --foreground: #000000;
+    
+    /* UI colors */
+    --card-background: #ffffff;
+    --card-foreground: #000000;
+    --input-background: #ffffff;
+    --input-border: rgba(0, 0, 0, 0.1);
+    --input-focus-ring: #3b82f6;
+    
+    /* Button colors */
+    --primary-button: #3b82f6;
+    --primary-button-hover: #2563eb;
+    --primary-button-text: #ffffff;
+    --secondary-button: #f3f4f6;
+    --secondary-button-hover: #e5e7eb;
+    --secondary-button-text: #111827;
+    
+    /* Accent colors */
+    --accent-color: #3b82f6;
+    --accent-color-light: #93c5fd;
+    --accent-color-dark: #1d4ed8;
+    
+    /* Border colors */
+    --border-color: rgba(0, 0, 0, 0.1);
+    --border-color-hover: rgba(0, 0, 0, 0.2);
+
+    /* PDF Viewer */
+    --sidebar-width: 350px;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: 'Courier New', monospace;
 }
 
 .dark {
@@ -73,7 +84,12 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Noto Sans Lao", Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* Apply Phetsarath font to specific elements */
+.phetsarath {
+  font-family: var(--font-phetsarath);
 }
 
 /* Form styling */
@@ -94,4 +110,20 @@ input:focus, select:focus, textarea:focus {
   background-color: var(--card-background);
   color: var(--card-foreground);
   border: 1px solid var(--border-color);
+}
+
+/* PDF Sidebar integration */
+@media (min-width: 768px) {
+  main.with-sidebar {
+    margin-right: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    transition: margin-right 0.3s, width 0.3s;
+  }
+
+  .with-sidebar .max-w-7xl,
+  .with-sidebar .max-w-6xl,
+  .with-sidebar .max-w-5xl,
+  .with-sidebar .max-w-4xl {
+    max-width: 100% !important;
+  }
 }
