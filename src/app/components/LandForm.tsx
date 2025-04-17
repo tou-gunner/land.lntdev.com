@@ -180,8 +180,15 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
     setSaveStatus(null);
     
     try {
+      // Format the data for submission
+      const formattedData = {
+        ...formData,
+        landusetype: formData.landusetype ? Number(formData.landusetype) : null,
+        landvaluezone_number: formData.landvaluezone_number ? Number(formData.landvaluezone_number) : null
+      };
+      
       // Send data to API
-      const result = await saveParcel(formData).unwrap();
+      const result = await saveParcel(formattedData).unwrap();
       
       // Handle response
       if (result.success) {
@@ -376,7 +383,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               ເຂດປະເມີນລາຄາ:
             </label>
             <input
-              type="text"
+              type="number"
               id="landvaluezone_number"
               name="landvaluezone_number"
               value={formData.landvaluezone_number}
