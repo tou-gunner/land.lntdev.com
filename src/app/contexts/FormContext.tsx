@@ -190,9 +190,30 @@ export function FormProvider({ children }: { children: ReactNode }) {
   const updateLandRight = useCallback((index: number, landRightData: any) => {
     setFormData(prev => {
       const updatedLandRights = [...prev.landrights];
+      
+      // Create sanitized data with null values converted to appropriate defaults
+      const sanitizedData: any = {};
+      
+      // Process each field in the new data
+      Object.entries(landRightData).forEach(([key, value]) => {
+        if (value === null) {
+          // Handle null values based on field type
+          const currentValue = updatedLandRights[index][key];
+          if (typeof currentValue === 'number') {
+            sanitizedData[key] = 0;
+          } else if (typeof currentValue === 'boolean') {
+            sanitizedData[key] = false;
+          } else {
+            sanitizedData[key] = '';
+          }
+        } else {
+          sanitizedData[key] = value;
+        }
+      });
+      
       updatedLandRights[index] = {
         ...updatedLandRights[index],
-        ...landRightData
+        ...sanitizedData
       };
       
       return {
@@ -271,10 +292,31 @@ export function FormProvider({ children }: { children: ReactNode }) {
 
   // Handler for updating form data
   const updateFormData = useCallback((newData: Partial<FormData>) => {
-    setFormData(prev => ({
-      ...prev,
-      ...newData
-    }));
+    setFormData(prev => {
+      // Create sanitized data with null values converted to appropriate defaults
+      const sanitizedData: Partial<FormData> = {};
+      
+      // Process each field in the new data
+      Object.entries(newData).forEach(([key, value]) => {
+        if (value === null) {
+          // Handle null values based on field type
+          if (typeof prev[key] === 'number') {
+            sanitizedData[key] = 0;
+          } else if (typeof prev[key] === 'boolean') {
+            sanitizedData[key] = false;
+          } else {
+            sanitizedData[key] = '';
+          }
+        } else {
+          sanitizedData[key] = value;
+        }
+      });
+      
+      return {
+        ...prev,
+        ...sanitizedData
+      };
+    });
   }, []);
 
   // Create the context value

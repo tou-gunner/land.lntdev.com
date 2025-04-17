@@ -180,40 +180,8 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
     setSaveStatus(null);
     
     try {
-      // Create API compatible data object - now field names already match
-      const apiData = {
-        // Required fields
-        parcelno: formData.parcelno,
-        cadastremapno: formData.cadastremapno,
-        isstate: formData.isstate,
-        
-        // Optional fields - Field names already match API parameters
-        parcelno_old: formData.parcelno_old || null,
-        cadastremapno_old: formData.cadastremapno_old || null,
-        landusetype: formData.landusetype && formData.landusetype !== "" 
-          ? parseInt(formData.landusetype) 
-          : null,
-        landusezone: formData.landusezone || null,
-        urbanizationlevel: formData.urbanizationlevel || null,
-        landvaluezone_number: formData.landvaluezone_number && formData.landvaluezone_number !== "" 
-          ? parseInt(formData.landvaluezone_number) 
-          : null,
-        roadtype: formData.roadtype || null,
-        purpose: formData.purpose || null,
-        status: formData.status || null,
-        area: formData.area || null,
-        additionalstatements: formData.additionalstatements || null,
-        
-        // Address fields
-        province: formData.province || null,
-        district: formData.district || null,
-        village: formData.village || null,
-        unit: formData.unit || null,
-        road: formData.road || null
-      };
-      
       // Send data to API
-      const result = await saveParcel(apiData).unwrap();
+      const result = await saveParcel(formData).unwrap();
       
       // Handle response
       if (result.success) {
@@ -313,7 +281,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="parcelno_old"
               name="parcelno_old"
-              value={formData.parcelno_old || ""}
+              value={formData.parcelno_old}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -328,7 +296,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="cadastremapno_old"
               name="cadastremapno_old"
-              value={formData.cadastremapno_old || ""}
+              value={formData.cadastremapno_old}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -342,7 +310,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <select
               id="landusetype"
               name="landusetype"
-              value={formData.landusetype ?? ""}
+              value={formData.landusetype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={typesLoading}
@@ -368,7 +336,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <select
               id="landusezone"
               name="landusezone"
-              value={formData.landusezone ?? ""}
+              value={formData.landusezone}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={zonesLoading}
@@ -411,7 +379,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="landvaluezone_number"
               name="landvaluezone_number"
-              value={formData.landvaluezone_number ?? ""}
+              value={formData.landvaluezone_number}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -425,7 +393,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <select
               id="roadtype"
               name="roadtype"
-              value={formData.roadtype ?? ""}
+              value={formData.roadtype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={roadTypesLoading}
@@ -469,7 +437,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="purpose"
               name="purpose"
-              value={formData.purpose || ""}
+              value={formData.purpose}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -483,7 +451,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <select
               id="status"
               name="status"
-              value={formData.status ?? ""}
+              value={formData.status}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={disputeTypesLoading}
@@ -510,7 +478,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="number"
               id="area"
               name="area"
-              value={formData.area ?? ""}
+              value={formData.area}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -525,7 +493,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
           <textarea
             id="additionalstatements"
             name="additionalstatements"
-            value={formData.additionalstatements || ""}
+            value={formData.additionalstatements}
             onChange={handleChange}
             rows={4}
             className="form-textarea w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
@@ -544,7 +512,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               <select
                 id="province"
                 name="province"
-                value={formData.province || ""}
+                value={formData.province}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
                 disabled={provincesLoading}
@@ -570,7 +538,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               <select
                 id="district"
                 name="district"
-                value={formData.district || ""}
+                value={formData.district}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
                 disabled={districtsLoading || !formData.province}
@@ -596,7 +564,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               <select
                 id="village"
                 name="village"
-                value={formData.village || ""}
+                value={formData.village}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
                 disabled={villagesLoading || !formData.district}
@@ -623,7 +591,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                 type="text"
                 id="unit"
                 name="unit"
-                value={formData.unit || ""}
+                value={formData.unit}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               />
@@ -638,7 +606,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                 type="text"
                 id="road"
                 name="road"
-                value={formData.road || ""}
+                value={formData.road}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               />
