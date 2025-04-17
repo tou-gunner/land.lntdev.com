@@ -11,7 +11,8 @@ import {
   useSaveParcelMutation,
   useGetProvincesQuery,
   useGetDistrictsQuery,
-  useGetVillagesQuery
+  useGetVillagesQuery,
+  useGetParcelInfoQuery
 } from "../redux/api/apiSlice";
 
 interface ZoneItem {
@@ -21,15 +22,7 @@ interface ZoneItem {
 }
 
 const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
-  const { formData: contextFormData, updateLandForm } = useFormContext();
-  
-  // Instead of duplicating state, let's reference context data directly
-  // and only manage local state for search functionality
-  
-  // Expose formData via ref
-  useImperativeHandle(ref, () => ({
-    formData: contextFormData.land
-  }));
+  const { formData, updateFormData } = useFormContext();
 
   const [searchData, setSearchData] = useState({
     cadastremapno: "",
@@ -52,73 +45,97 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
   
   // Location data
   const { data: provinces = [], isLoading: provincesLoading } = useGetProvincesQuery();
-  const { data: districts = [], isLoading: districtsLoading } = useGetDistrictsQuery(contextFormData.land.province, {
-    skip: !contextFormData.land.province
+  const { data: districts = [], isLoading: districtsLoading } = useGetDistrictsQuery(formData.province, {
+    skip: !formData.province
   });
-  const { data: villages = [], isLoading: villagesLoading } = useGetVillagesQuery(contextFormData.land.district, {
-    skip: !contextFormData.land.district
+  const { data: villages = [], isLoading: villagesLoading } = useGetVillagesQuery(formData.district, {
+    skip: !formData.district
   });
   
   // Only run the search query when triggered
   const { 
-    data: searchResult,
-    isFetching: searching,
-    error: searchError
-  } = useSearchLandParcelQuery(
-    { cadastreMapNo: searchData.cadastremapno, parcelNo: searchData.parcelno },
+    data: parcelInfoResult,
+    isFetching: fetchingParcelInfo,
+    error: parcelInfoError
+  } = useGetParcelInfoQuery(
+    { parcelno: searchData.parcelno, mapno: searchData.cadastremapno },
     { skip: !searchTrigger }
   );
 
-  // Update form data when search results arrive
-  const hasSearchResults = searchResult?.success && Array.isArray(searchResult.data) && searchResult.data.length > 0;
+  // Update form data when parcel info results arrive
+  const hasParcelInfo = parcelInfoResult?.success && Array.isArray(parcelInfoResult.data) && parcelInfoResult.data.length > 0;
   
   // Move the search results update to useEffect instead of doing it directly in the render phase
   useEffect(() => {
-    // Update form with search results when available
-    if (hasSearchResults && searchTrigger) {
-      const parcelData = searchResult.data[0];
-      
-      // Create a new formData object with field names matching API parameters
-      const newFormData = {
-        ...contextFormData.land,
-        parcelno: parcelData.parcelno || "",
-        cadastremapno: parcelData.cadastremapno || "",
-        parcelno_old: parcelData.parcelno_old || "",
-        cadastremapno_old: parcelData.cadastremapno_old || "",
-        landusetype: parcelData.landusetype?.toString() || "",
-        landusezone: parcelData.landusezone?.toString() || "",
-        urbanizationlevel: parcelData.urbanizationlevel || "",
-        landvaluezone_number: parcelData.landvaluezone_number || "",
-        roadtype: parcelData.roadtype?.toString() || "",
-        isstate: parcelData.isstate || false,
-        purpose: parcelData.purpose || "",
-        status: parcelData.status || "",
-        area: parcelData.area?.toString() || "",
-        additionalstatements: parcelData.additionalstatements || "",
-        // Address fields
-        province: parcelData.province || "",
-        district: parcelData.district || "",
-        village: parcelData.villagecode || "",
-        unit: parcelData.unit || "",
-        road: parcelData.road || ""
-      };
+    // Update form with parcel info results when available
+    if (hasParcelInfo && searchTrigger) {
+      const parcelData = parcelInfoResult.data[0];
       
       // Update the context directly
-      updateLandForm(newFormData);
+      updateFormData(parcelData);
       
       // Reset search trigger
       setTimeout(() => {
         setSearchTrigger(false);
       }, 0);
+      
+      console.log('Loaded land data with barcode:', parcelData.barcode);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasSearchResults, searchTrigger, searchResult?.data]);
+  }, [hasParcelInfo, searchTrigger, parcelInfoResult?.data]);
+
+  useImperativeHandle(ref, () => ({
+    formData
+  }));
+
+  // Extract and set location values from villagecode if available
+  useEffect(() => {
+    if (formData.villagecode) {
+      const villageCode = formData.villagecode.toString();
+      // Extract province code from first 2 characters
+      if (villageCode.length >= 2) {
+        const provinceCode = villageCode.substring(0, 2);
+        // Only update if different to avoid infinite loops
+        if (formData.province !== provinceCode) {
+          updateFormData({
+            ...formData,
+            province: provinceCode,
+            // Clear district and village to avoid invalid states
+            district: "",
+            village: ""
+          });
+        }
+      }
+      
+      // Extract district code from first 4 characters
+      if (villageCode.length >= 4 && formData.province) {
+        const districtCode = villageCode.substring(0, 4);
+        // Only update if different to avoid infinite loops
+        if (formData.district !== districtCode) {
+          updateFormData({
+            ...formData,
+            district: districtCode,
+            // Clear village to avoid invalid states
+            village: ""
+          });
+        }
+      }
+      
+      // Set the village code if province and district are already set
+      if (formData.province && formData.district && formData.village !== villageCode) {
+        updateFormData({
+          ...formData,
+          village: villageCode
+        });
+      }
+    }
+  }, [formData.villagecode, formData.province, formData.district, formData.village, updateFormData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     
     // Create a new form data object by copying the current context data
-    const updatedFormData = { ...contextFormData.land };
+    const updatedFormData = { ...formData };
     
     // Handle cascading selection for location fields
     if (name === "province") {
@@ -136,7 +153,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
     }
     
     // Update the context
-    updateLandForm(updatedFormData);
+    updateFormData(updatedFormData);
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,29 +183,33 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
       // Create API compatible data object - now field names already match
       const apiData = {
         // Required fields
-        parcelno: contextFormData.land.parcelno,
-        cadastremapno: contextFormData.land.cadastremapno,
-        isstate: contextFormData.land.isstate,
+        parcelno: formData.parcelno,
+        cadastremapno: formData.cadastremapno,
+        isstate: formData.isstate,
         
         // Optional fields - Field names already match API parameters
-        parcelno_old: contextFormData.land.parcelno_old || null,
-        cadastremapno_old: contextFormData.land.cadastremapno_old || null,
-        landusetype: contextFormData.land.landusetype ? parseInt(contextFormData.land.landusetype) : null,
-        landusezone: contextFormData.land.landusezone || null,
-        urbanizationlevel: contextFormData.land.urbanizationlevel || null,
-        landvaluezone_number: contextFormData.land.landvaluezone_number ? parseInt(contextFormData.land.landvaluezone_number) : null,
-        roadtype: contextFormData.land.roadtype ? parseInt(contextFormData.land.roadtype) : null,
-        purpose: contextFormData.land.purpose || null,
-        status: contextFormData.land.status ? parseInt(contextFormData.land.status) : null,
-        area: contextFormData.land.area ? parseFloat(contextFormData.land.area) : null,
-        additionalstatements: contextFormData.land.additionalstatements || null,
+        parcelno_old: formData.parcelno_old || null,
+        cadastremapno_old: formData.cadastremapno_old || null,
+        landusetype: formData.landusetype && formData.landusetype !== "" 
+          ? parseInt(formData.landusetype) 
+          : null,
+        landusezone: formData.landusezone || null,
+        urbanizationlevel: formData.urbanizationlevel || null,
+        landvaluezone_number: formData.landvaluezone_number && formData.landvaluezone_number !== "" 
+          ? parseInt(formData.landvaluezone_number) 
+          : null,
+        roadtype: formData.roadtype || null,
+        purpose: formData.purpose || null,
+        status: formData.status || null,
+        area: formData.area || null,
+        additionalstatements: formData.additionalstatements || null,
         
         // Address fields
-        province: contextFormData.land.province || null,
-        district: contextFormData.land.district || null,
-        village: contextFormData.land.village || null,
-        unit: contextFormData.land.unit || null,
-        road: contextFormData.land.road || null
+        province: formData.province || null,
+        district: formData.district || null,
+        village: formData.village || null,
+        unit: formData.unit || null,
+        road: formData.road || null
       };
       
       // Send data to API
@@ -196,6 +217,17 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
       
       // Handle response
       if (result.success) {
+        // Update the context with the latest data including any returned ID/barcode
+        if (result.data?.gid) {
+          updateFormData({
+            ...formData,
+            gid: result.data.gid,
+            barcode: result.data.barcode
+          });
+          
+          console.log('Land data saved with barcode:', result.data.barcode);
+        }
+        
         setSaveStatus({ success: true, message: "ບັນທຶກຂໍ້ມູນສຳເລັດ" });
       } else {
         setSaveStatus({ success: false, message: result.message || "ບັນທຶກຂໍ້ມູນບໍ່ສຳເລັດ" });
@@ -208,9 +240,6 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
       });
     }
   };
-
-  // Fallback options for dropdowns in case API fails
-  const cityPlanningZones = ["ເຂດພັດທະນາ", "ເຂດອະນຸລັກ", "ເຂດສີຂຽວ"];
 
   // For brevity, we'll just show the form structure and reference the first few fields
   return (
@@ -256,19 +285,19 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <button 
               type="button" 
               onClick={handleSearch}
-              disabled={searching}
+              disabled={fetchingParcelInfo}
               className="bg-blue-800 hover:bg-blue-900 text-white p-2 rounded shadow-sm w-full h-10"
             >
-              {searching ? "ກຳລັງຄົ້ນຫາ..." : "ຄົ້ນຫາ"}
+              {fetchingParcelInfo ? "ກຳລັງຄົ້ນຫາ..." : "ຄົ້ນຫາ"}
             </button>
           </div>
         </div>
         
-        {searchError && (
-          <div className="mt-2 text-red-500">{searchError.toString()}</div>
+        {parcelInfoError && (
+          <div className="mt-2 text-red-500">{parcelInfoError.toString()}</div>
         )}
         
-        {searchResult && searchResult.success && (
+        {parcelInfoResult && parcelInfoResult.success && (
           <div className="mt-2 text-green-500">ພົບຂໍ້ມູນແລ້ວ!</div>
         )}
       </div>
@@ -284,7 +313,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="parcelno_old"
               name="parcelno_old"
-              value={contextFormData.land.parcelno_old || ""}
+              value={formData.parcelno_old || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -299,7 +328,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="cadastremapno_old"
               name="cadastremapno_old"
-              value={contextFormData.land.cadastremapno_old || ""}
+              value={formData.cadastremapno_old || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -313,7 +342,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <select
               id="landusetype"
               name="landusetype"
-              value={contextFormData.land.landusetype}
+              value={formData.landusetype ?? ""}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={typesLoading}
@@ -339,7 +368,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <select
               id="landusezone"
               name="landusezone"
-              value={contextFormData.land.landusezone}
+              value={formData.landusezone ?? ""}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={zonesLoading}
@@ -365,16 +394,11 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <select
               id="urbanizationlevel"
               name="urbanizationlevel"
-              value={contextFormData.land.urbanizationlevel}
+              value={formData.urbanizationlevel}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             >
               <option value="">ເລືອກເຂດ</option>
-              {cityPlanningZones.map((zone) => (
-                <option key={zone} value={zone}>
-                  {zone}
-                </option>
-              ))}
             </select>
           </div>
           
@@ -387,7 +411,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="landvaluezone_number"
               name="landvaluezone_number"
-              value={contextFormData.land.landvaluezone_number || ""}
+              value={formData.landvaluezone_number ?? ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -401,7 +425,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <select
               id="roadtype"
               name="roadtype"
-              value={contextFormData.land.roadtype}
+              value={formData.roadtype ?? ""}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={roadTypesLoading}
@@ -426,7 +450,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                 type="checkbox"
                 id="isstate"
                 name="isstate"
-                checked={contextFormData.land.isstate || false}
+                checked={formData.isstate || false}
                 onChange={handleChange}
                 className="form-checkbox h-5 w-5 dark:bg-gray-700"
               />
@@ -445,7 +469,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="text"
               id="purpose"
               name="purpose"
-              value={contextFormData.land.purpose || ""}
+              value={formData.purpose || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -459,7 +483,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <select
               id="status"
               name="status"
-              value={contextFormData.land.status || ""}
+              value={formData.status ?? ""}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={disputeTypesLoading}
@@ -486,22 +510,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               type="number"
               id="area"
               name="area"
-              value={contextFormData.land.area || "0"}
-              onChange={handleChange}
-              className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          
-          {/* Land Owner Name */}
-          <div className="form-group">
-            <label htmlFor="landOwnerName" className="block mb-2 font-semibold text-black dark:text-white">
-              ຊື່ເຈົ້າຂອງຕອນດິນ:
-            </label>
-            <input
-              type="text"
-              id="landOwnerName"
-              name="landOwnerName"
-              value={contextFormData.land.landOwnerName || ""}
+              value={formData.area ?? ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -516,7 +525,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
           <textarea
             id="additionalstatements"
             name="additionalstatements"
-            value={contextFormData.land.additionalstatements || ""}
+            value={formData.additionalstatements || ""}
             onChange={handleChange}
             rows={4}
             className="form-textarea w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
@@ -535,7 +544,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               <select
                 id="province"
                 name="province"
-                value={contextFormData.land.province || ""}
+                value={formData.province || ""}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
                 disabled={provincesLoading}
@@ -561,10 +570,10 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               <select
                 id="district"
                 name="district"
-                value={contextFormData.land.district || ""}
+                value={formData.district || ""}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={districtsLoading || !contextFormData.land.province}
+                disabled={districtsLoading || !formData.province}
               >
                 <option value="">ເລືອກເມືອງ</option>
                 {districtsLoading ? (
@@ -587,10 +596,10 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               <select
                 id="village"
                 name="village"
-                value={contextFormData.land.village || ""}
+                value={formData.village || ""}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={villagesLoading || !contextFormData.land.district}
+                disabled={villagesLoading || !formData.district}
               >
                 <option value="">ເລືອກບ້ານ</option>
                 {villagesLoading ? (
@@ -614,7 +623,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                 type="text"
                 id="unit"
                 name="unit"
-                value={contextFormData.land.unit || ""}
+                value={formData.unit || ""}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               />
@@ -629,7 +638,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                 type="text"
                 id="road"
                 name="road"
-                value={contextFormData.land.road || ""}
+                value={formData.road || ""}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               />

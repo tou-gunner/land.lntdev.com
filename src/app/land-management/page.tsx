@@ -13,37 +13,29 @@ function LandManagementContent() {
   const [activeTab, setActiveTab] = useState<'land' | 'ownership'>('land');
   const searchParams = useSearchParams();
   const parcelParam = searchParams.get('parcel');
-  const { updateLandForm, formData } = useFormContext();
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const { updateFormData, formData } = useFormContext();
   const [splitLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
   
   // Check for parcel parameter and set it as initial active tab if present
   useEffect(() => {
     if (parcelParam) {
-      // Set initial form data with parcel ID
-      updateLandForm({
-        barcode: parcelParam
-      });
+      setPdfUrl(`${apiBaseUrl}/parcel/pdf?parcel=${parcelParam}`);
     }
-  }, [parcelParam, updateLandForm]);
+  }, [parcelParam, updateFormData]);
   
   // Add logging when tab changes to verify state persistence
   const handleTabChange = (tab: 'land' | 'ownership') => {
-    console.log('Changing tab to:', tab);
     setActiveTab(tab);
-  };
-  
-  // Generate PDF URL
-  const getPdfUrl = () => {
-    return `${apiBaseUrl}/parcel/pdf?parcel=${formData?.land?.barcode}`;
   };
 
   return (
     <div className="">
       {/* Always use split view when parcel is selected */}
-      {formData?.land?.barcode ? (
+      {pdfUrl ? (
         <SplitViewPdfViewer
-          pdfUrl={getPdfUrl()}
+          pdfUrl={pdfUrl}
           defaultLayout={splitLayout}
           height="700px"
         >

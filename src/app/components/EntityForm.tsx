@@ -10,6 +10,7 @@ import {
   useGetVillagesQuery,
   useGetTitlesQuery
 } from "../redux/api/apiSlice";
+import { useFormContext } from "../contexts/FormContext";
 
 interface ApiItem {
   id: number | string;
@@ -38,98 +39,50 @@ interface Village {
   villagename: string;
 }
 
-interface EntityFormProps {
-  formData?: any;
-  onChange?: (data: any) => void;
-  onSubmit?: (data: any) => void;
-}
-
-export default function EntityForm({ formData: propFormData, onChange, onSubmit }: EntityFormProps) {
-  const [formData, setFormData] = useState({
-    title: "",
-    fullname: "",
-    entitytype: "",
-    regno: "",
-    regdate: "",
-    businesstype: "",
-    nationality: "",
-    governmentplace: "",
-    companyname: "",
-    // Address fields
-    province: "",
-    district: "",
-    village: "",
-    unit: "",
-    road: "",
-    houseno: "",
-    ...(propFormData || {}) // Initialize with propFormData if provided
-  });
-
-  // Update local state when prop changes
-  useEffect(() => {
-    if (propFormData) {
-      setFormData(propFormData);
-    }
-  }, [propFormData]);
-
+export default function EntityForm() {
+  const { formData, updateFormData } = useFormContext();
   // Use RTK Query hooks for data fetching
   const { data: entityTypes = [], isLoading: loadingEntityTypes } = useGetEntityTypesQuery();
   const { data: businessTypes = [], isLoading: loadingBusinessTypes } = useGetBusinessTypesQuery();
   const { data: ministries = [], isLoading: loadingMinistries } = useGetMinistriesQuery();
   const { data: titles = [], isLoading: loadingTitles } = useGetTitlesQuery();
   
-  // Use RTK Query hooks for location data
-  const { data: provinces = [], isLoading: isLoadingProvinces } = useGetProvincesQuery();
-  const { data: districts = [], isLoading: isLoadingDistricts } = useGetDistrictsQuery(formData.province, {
-    skip: !formData.province
-  });
-  const { data: villages = [], isLoading: isLoadingVillages } = useGetVillagesQuery(formData.district, {
-    skip: !formData.district
-  });
+   // Location data
+   const { data: provinces = [], isLoading: provincesLoading } = useGetProvincesQuery();
+   const { data: districts = [], isLoading: districtsLoading } = useGetDistrictsQuery(formData.province, {
+     skip: !formData.province
+   });
+   const { data: villages = [], isLoading: villagesLoading } = useGetVillagesQuery(formData.district, {
+     skip: !formData.district
+   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     
-    let newFormData;
+    const updatedFormData = { ...formData };
     
-    // Reset dependent fields when parent field changes
+    // Handle cascading selection for location fields
     if (name === "province") {
-      newFormData = {
-        ...formData,
-        province: value,
-        district: "",
-        village: ""
-      };
+      updatedFormData[name] = value;
+      updatedFormData["district"] = "";
+      updatedFormData["village"] = "";
     } else if (name === "district") {
-      newFormData = {
-        ...formData,
-        district: value,
-        village: ""
-      };
+      updatedFormData[name] = value;
+      updatedFormData["village"] = "";
+    } else if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      updatedFormData[name] = checked;
     } else {
-      newFormData = {
-        ...formData,
-        [name]: value,
-      };
+      updatedFormData[name] = value;
     }
     
-    setFormData(newFormData);
-    
-    // Delay the onChange callback to the next tick to avoid simultaneous renders
-    if (onChange) {
-      setTimeout(() => {
-        onChange(newFormData);
-      }, 0);
-    }
+    // Update the context
+    updateFormData(updatedFormData);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSubmit) {
-      onSubmit(formData);
-    } else {
-      console.log(formData);
-    }
+    //TODO: Submit form data
   };
 
   return (
@@ -166,14 +119,14 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
           
           {/* Full Name */}
           <div className="form-group">
-            <label htmlFor="fullname" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="name" className="block mb-2 font-semibold text-black dark:text-white">
               ຊື່ ແລະ ນາມສະກຸນ:
             </label>
             <input
               type="text"
-              id="fullname"
-              name="fullname"
-              value={formData.fullname}
+              id="name"
+              name="name"
+              value={formData.name}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -333,15 +286,15 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
                 value={formData.province}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={isLoadingProvinces}
+                disabled={provincesLoading}
               >
                 <option value="">ເລືອກແຂວງ</option>
-                {isLoadingProvinces ? (
+                {provincesLoading ? (
                   <option value="">ກຳລັງໂຫຼດ...</option>
                 ) : (
                   provinces.map((province) => (
-                    <option key={province.provincecode} value={province.provincecode}>
-                      {province.province_lao}
+                    <option key={province.id} value={province.id}>
+                      {province.name}
                     </option>
                   ))
                 )}
@@ -359,15 +312,15 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
                 value={formData.district}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={isLoadingDistricts || !formData.province}
+                disabled={districtsLoading || !formData.province}
               >
                 <option value="">ເລືອກເມືອງ</option>
-                {isLoadingDistricts ? (
+                {districtsLoading ? (
                   <option value="">ກຳລັງໂຫຼດ...</option>
                 ) : (
                   districts.map((district) => (
-                    <option key={district.districtcode} value={district.districtcode}>
-                      {district.district_lao}
+                    <option key={district.id} value={district.id}>
+                      {district.name}
                     </option>
                   ))
                 )}
@@ -385,15 +338,15 @@ export default function EntityForm({ formData: propFormData, onChange, onSubmit 
                 value={formData.village}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={isLoadingVillages || !formData.district}
+                disabled={villagesLoading || !formData.district}
               >
                 <option value="">ເລືອກບ້ານ</option>
-                {isLoadingVillages ? (
+                {villagesLoading ? (
                   <option value="">ກຳລັງໂຫຼດ...</option>
                 ) : (
                   villages.map((village) => (
-                    <option key={village.villageid} value={village.villageid}>
-                      {village.villagename}
+                    <option key={village.id} value={village.id}>
+                      {village.name}
                     </option>
                   ))
                 )}

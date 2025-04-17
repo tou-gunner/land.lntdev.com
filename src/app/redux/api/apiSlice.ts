@@ -65,7 +65,7 @@ export const apiSlice = createApi({
     }),
 
     // Districts by Province
-    getDistricts: builder.query<{ id: string, name: string, value: string }[], string>({
+    getDistricts: builder.query<{ id: string, name: string, value: string }[], string | undefined>({
       query: (provinceCode) => `/utility/districts?province=${provinceCode}`,
       transformResponse: (response: ApiResponse<District[]>) => {
         if (response?.success && Array.isArray(response.data)) {
@@ -80,7 +80,7 @@ export const apiSlice = createApi({
     }),
 
     // Villages by District
-    getVillages: builder.query<{ id: string, name: string, value: string }[], string>({
+    getVillages: builder.query<{ id: string, name: string, value: string }[], string | undefined>({
       query: (districtCode) => `/utility/villages?district=${districtCode}`,
       transformResponse: (response: ApiResponse<Village[]>) => {
         if (response?.success && Array.isArray(response.data)) {
@@ -258,6 +258,12 @@ export const apiSlice = createApi({
         body: parcelData,
       }),
     }),
+    
+    // Get Parcel Info with Land Rights
+    getParcelInfo: builder.query<any, { parcelno: string, mapno: string }>({
+      query: ({ parcelno, mapno }) => 
+        `/parcel/parcel_info?parcelno=${parcelno}&mapno=${mapno}`
+    }),
   }),
 })
 
@@ -277,5 +283,6 @@ export const {
   useGetLandTitleHistoryQuery,
   useGetTitlesQuery,
   useSearchLandParcelQuery,
-  useSaveParcelMutation
+  useSaveParcelMutation,
+  useGetParcelInfoQuery
 } = apiSlice; 

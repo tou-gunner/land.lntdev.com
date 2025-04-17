@@ -71,7 +71,7 @@ export default function SplitViewPdfViewer({
       }}
     >
       {/* Toolbar */}
-      <div 
+      {/* <div 
         className="flex items-center justify-between p-2 border-b"
         style={{ 
           backgroundColor: 'var(--card-background)',
@@ -115,7 +115,7 @@ export default function SplitViewPdfViewer({
             </svg>
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Split container */}
       <div 

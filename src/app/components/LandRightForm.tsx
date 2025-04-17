@@ -1,22 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useFormContext } from "../contexts/FormContext";
 import { 
   useGetRightTypesQuery, 
   useGetLandUseTypesQuery, 
   useGetLandTitleHistoryQuery 
 } from "../redux/api/apiSlice";
 
-interface ApiItem {
-  id: number | string;
-  name: string;
-  englishName?: string;
+interface LandRightProps {
+  formData?: any;
+  onChange?: (data: any) => void;
+  onSubmit?: (data: any) => void;
 }
 
-export default function LandRightForm() {
-  const { formData: contextFormData, updateLandRightForm } = useFormContext();
-  
+export default function LandRightForm({ formData = {}, onChange, onSubmit }: LandRightProps) {
   // Use RTK Query hooks for data fetching
   const { data: rightTypes = [], isLoading: loadingRightTypes } = useGetRightTypesQuery();
   const { data: landUseTypes = [], isLoading: loadingLandUseTypes } = useGetLandUseTypesQuery();
@@ -25,17 +22,25 @@ export default function LandRightForm() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    // Update context directly
-    updateLandRightForm({
-      ...contextFormData.landright,
+    // Create updated data
+    const updatedData = {
+      ...formData,
       [name]: value,
-    });
+    };
+    
+    // Call onChange if provided
+    if (onChange) {
+      onChange(updatedData);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(contextFormData.landright);
-    // Submit the form data to your API
+    if (onSubmit) {
+      onSubmit(formData);
+    } else {
+      console.log("Form data:", formData);
+    }
   };
 
   return (
@@ -52,7 +57,7 @@ export default function LandRightForm() {
             <select
               id="righttype"
               name="righttype"
-              value={contextFormData.landright.righttype}
+              value={formData.righttype || ""}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingRightTypes}
@@ -72,14 +77,14 @@ export default function LandRightForm() {
           
           {/* Land Title Number */}
           <div className="form-group">
-            <label htmlFor="landtitleno" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="titlenumber" className="block mb-2 font-semibold text-black dark:text-white">
               ເລກທີໃບຕາດິນ:
             </label>
             <input
               type="text"
-              id="landtitleno"
-              name="landtitleno"
-              value={contextFormData.landright.landtitleno}
+              id="titlenumber"
+              name="titlenumber"
+              value={formData.titlenumber || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -87,14 +92,14 @@ export default function LandRightForm() {
           
           {/* Issue Number */}
           <div className="form-group">
-            <label htmlFor="issueno" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="titleeditionno" className="block mb-2 font-semibold text-black dark:text-white">
               ອອກຄັ້ງທີ:
             </label>
             <input
-              type="number"
-              id="issueno"
-              name="issueno"
-              value={contextFormData.landright.issueno}
+              type="text"
+              id="titleeditionno"
+              name="titleeditionno"
+              value={formData.titleeditionno || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -102,14 +107,14 @@ export default function LandRightForm() {
           
           {/* Register Book Number */}
           <div className="form-group">
-            <label htmlFor="registerbookno" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="landregisterbookno" className="block mb-2 font-semibold text-black dark:text-white">
               ເລກທີປຶ້ມທະບຽນທີ່ດິນ:
             </label>
             <input
               type="text"
-              id="registerbookno"
-              name="registerbookno"
-              value={contextFormData.landright.registerbookno}
+              id="landregisterbookno"
+              name="landregisterbookno"
+              value={formData.landregisterbookno || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -117,14 +122,14 @@ export default function LandRightForm() {
           
           {/* Register Number */}
           <div className="form-group">
-            <label htmlFor="registerno" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="landregistersheetno" className="block mb-2 font-semibold text-black dark:text-white">
               ເລກທີໃບທະບຽນທີ່ດິນ:
             </label>
             <input
               type="text"
-              id="registerno"
-              name="registerno"
-              value={contextFormData.landright.registerno}
+              id="landregistersheetno"
+              name="landregistersheetno"
+              value={formData.landregistersheetno || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -132,13 +137,13 @@ export default function LandRightForm() {
           
           {/* Approval Type */}
           <div className="form-group">
-            <label htmlFor="approvaltype" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="landrightcategory" className="block mb-2 font-semibold text-black dark:text-white">
               ປະເພດສິດນຳໃຊ້ທີ່ດິນ:
             </label>
             <select
-              id="approvaltype"
-              name="approvaltype"
-              value={contextFormData.landright.approvaltype}
+              id="landrightcategory"
+              name="landrightcategory"
+              value={formData.landrightcategory || ""}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingLandUseTypes}
@@ -158,13 +163,13 @@ export default function LandRightForm() {
           
           {/* Land Title History */}
           <div className="form-group">
-            <label htmlFor="lthistory" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="history" className="block mb-2 font-semibold text-black dark:text-white">
               ການໄດ້ມາຂອງສິດນຳໃຊ້:
             </label>
             <select
-              id="lthistory"
-              name="lthistory"
-              value={contextFormData.landright.lthistory}
+              id="history"
+              name="history"
+              value={formData.history || ""}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingLandTitleHistory}
@@ -184,29 +189,29 @@ export default function LandRightForm() {
           
           {/* Portion */}
           <div className="form-group">
-            <label htmlFor="portion" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="part" className="block mb-2 font-semibold text-black dark:text-white">
               ພູດສ່ວນ:
             </label>
             <input
-              type="number"
-              id="portion"
-              name="portion"
-              value={contextFormData.landright.portion}
+              type="text"
+              id="part"
+              name="part"
+              value={formData.part || ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
           </div>
           
-          {/* Land Title Date */}
+          {/* Date fields */}
           <div className="form-group">
-            <label htmlFor="landtitledate" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="date_title_issued" className="block mb-2 font-semibold text-black dark:text-white">
               ອອກໃບຕາດິນ:
             </label>
             <input
               type="date"
-              id="landtitledate"
-              name="landtitledate"
-              value={contextFormData.landright.landtitledate}
+              id="date_title_issued"
+              name="date_title_issued"
+              value={formData.date_title_issued ? formData.date_title_issued.split('T')[0] : ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -214,29 +219,29 @@ export default function LandRightForm() {
           
           {/* Land Title Delivery Date */}
           <div className="form-group">
-            <label htmlFor="landtitledeliverydate" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="date_title_send_to_ponre" className="block mb-2 font-semibold text-black dark:text-white">
               ວັນທີສົ່ງໃບຕາດິນ:
             </label>
             <input
               type="date"
-              id="landtitledeliverydate"
-              name="landtitledeliverydate"
-              value={contextFormData.landright.landtitledeliverydate}
+              id="date_title_send_to_ponre"
+              name="date_title_send_to_ponre"
+              value={formData.date_title_send_to_ponre ? formData.date_title_send_to_ponre.split('T')[0] : ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
           </div>
           
-          {/* Classification Date */}
+          {/* Conclusion Date */}
           <div className="form-group">
-            <label htmlFor="classificationdate" className="block mb-2 font-semibold text-black dark:text-white">
-              ວັນທີຈັດປະເພດ:
+            <label htmlFor="date_conclusion" className="block mb-2 font-semibold text-black dark:text-white">
+              ວັນທີເຊັນສັນຍາ:
             </label>
             <input
               type="date"
-              id="classificationdate"
-              name="classificationdate"
-              value={contextFormData.landright.classificationdate}
+              id="date_conclusion"
+              name="date_conclusion"
+              value={formData.date_conclusion ? formData.date_conclusion.split('T')[0] : ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -244,29 +249,29 @@ export default function LandRightForm() {
           
           {/* Print Date */}
           <div className="form-group">
-            <label htmlFor="printdate" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="date_title_printed" className="block mb-2 font-semibold text-black dark:text-white">
               ວັນທີພິມ:
             </label>
             <input
               type="date"
-              id="printdate"
-              name="printdate"
-              value={contextFormData.landright.printdate}
+              id="date_title_printed"
+              name="date_title_printed"
+              value={formData.date_title_printed ? formData.date_title_printed.split('T')[0] : ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
           </div>
           
-          {/* Announcement Date */}
+          {/* Display Date */}
           <div className="form-group">
-            <label htmlFor="announcementdate" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="date_public_display" className="block mb-2 font-semibold text-black dark:text-white">
               ວັນທີປະກາດແຈ້ງການ:
             </label>
             <input
               type="date"
-              id="announcementdate"
-              name="announcementdate"
-              value={contextFormData.landright.announcementdate}
+              id="date_public_display"
+              name="date_public_display"
+              value={formData.date_public_display ? formData.date_public_display.split('T')[0] : ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />

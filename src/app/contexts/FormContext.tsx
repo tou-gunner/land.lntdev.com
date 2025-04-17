@@ -4,102 +4,105 @@ import { createContext, useContext, useState, ReactNode, useCallback } from "rea
 
 // Define the shape of our form data
 interface FormData {
-  land: {
-    parcelno: string;
-    parcelno_old: string;
-    cadastremapno: string;
-    cadastremapno_old: string;
-    landusetype: string;
-    landusezone: string;
-    urbanizationlevel: string;
-    landvaluezone_number: string;
-    roadtype: string;
-    isstate: boolean;
-    purpose: string;
-    status: string;
-    area: string;
-    landOwnerName: string;
-    additionalstatements: string;
-    // Address fields
-    province: string;
-    district: string;
-    village: string;
-    unit: string;
-    road: string;
-    [key: string]: any;
-  };
-  owner: {
-    ownerType: 'person' | 'entity';
-    personData?: {
-      title: string;
-      firstname: string;
-      lastname: string;
-      birthdate: string;
-      nationality: string;
-      occupation: string;
-      idcardno: string;
-      idcarddate: string;
-      governmentplace: string;
-      familybookno: string;
-      fathername: string;
-      mothername: string;
-      spousename: string;
-      spousebirthdate: string;
-      spousenationality: string;
-      spouseoccupation: string;
-      spousefathername: string;
-      spousemothername: string;
-      province: string;
-      district: string;
-      village: string;
-      unit: string;
-      street: string;
-      houseno: string;
+  // Land data
+  parcelno: string;
+  parcelno_old?: string;
+  cadastremapno: string;
+  cadastremapno_old?: string;
+  landusetype?: string;
+  landusezone?: string;
+  urbanizationlevel?: string;
+  landvaluezone_number?: string;
+  roadtype?: number;
+  isstate?: boolean;
+  purpose?: string;
+  status?: number;
+  area?: number;
+  additionalstatements?: string;
+  // Address fields
+  province?: string;
+  district?: string;
+  village?: string;
+  villagecode?: string;
+  unit?: string;
+  road?: string;
+  barcode?: string;
+  gid?: string;
+  // Land rights array
+  landrights: Array<{
+    gid: string;
+    parcelid: string;
+    ownerid: string;
+    righttype?: string;
+    landregisterbookno?: string;
+    titlenumber?: string;
+    titleeditionno?: string;
+    landrightcategory?: string;
+    landregistersheetno?: string;
+    stateland?: boolean;
+    barcode?: string;
+    part?: string;
+    history?: string;
+    valid_from?: string;
+    valid_till?: string;
+    date_conclusion?: string;
+    date_title_printed?: string;
+    date_public_display?: string;
+    date_title_send_to_ponre?: string;
+    date_title_issued?: string;
+    updated?: string;
+    // Owner data
+    owner: {
+      gid: string;
+      ownertype: 'person' | 'entity';
+      title?: string;
+      name?: string;
+      // Person specific fields
+      firstname?: string;
+      lastname?: string;
+      birthdate?: string;
+      nationality?: string;
+      occupation?: string;
+      idcardno?: string;
+      idcarddate?: string;
+      familybookno?: string;
+      fathername?: string;
+      mothername?: string;
+      spousename?: string;
+      spousebirthdate?: string;
+      spousefathername?: string;
+      spousemothername?: string;
+      spousenationality?: string;
+      spouseoccupation?: string;
+      // Entity specific fields
+      entitytype?: string;
+      registrationno?: string;
+      registrationdate?: string;
+      businesstype?: string;
+      companyname?: string;
+      // Common address fields
+      province?: string;
+      district?: string;
+      village?: string;
+      unit?: string;
+      road?: string;
+      houseno?: string;
+      government_workplace?: string;
+      isstate?: boolean;
+      updated?: string;
     };
-    entityData?: {
-      title: string;
-      fullname: string;
-      entitytype: string;
-      regno: string;
-      regdate: string;
-      businesstype: string;
-      nationality: string;
-      governmentplace: string;
-      companyname: string;
-      province: string;
-      district: string;
-      village: string;
-      unit: string;
-      road: string;
-      houseno: string;
-    };
-    [key: string]: any;
-  };
-  landright: {
-    righttype: string;
-    landtitleno: string;
-    issueno: string;
-    registerbookno: string;
-    registerno: string;
-    approvaltype: string;
-    lthistory: string;
-    portion: string;
-    landtitledate: string;
-    landtitledeliverydate: string;
-    classificationdate: string;
-    printdate: string;
-    announcementdate: string;
-    [key: string]: any;
-  };
+  }>;
+  [key: string]: any;
 }
 
 // Define the context type
 interface FormContextType {
   formData: FormData;
   isGovernmentLand: boolean;
-  updateLandForm: (data: any) => void;
-  updateOwnerForm: (data: any) => void;
-  updateLandRightForm: (data: any) => void;
+  updateFormData: (newData: Partial<FormData>) => void;
+  updateLandRight: (index: number, data: any) => void;
+  addLandRight: (data?: any) => void;
+  removeLandRight: (index: number) => void;
   setIsGovernmentLand: (value: boolean) => void;
 }
 
@@ -117,74 +120,160 @@ export function useFormContext() {
 
 // Provider component
 export function FormProvider({ children }: { children: ReactNode }) {
-  // Initialize form state
+  // Initialize form state with default empty values
   const [formData, setFormData] = useState<FormData>({
-    land: {
-      parcelno: "",
-      parcelno_old: "",
-      cadastremapno: "",
-      cadastremapno_old: "",
-      landusetype: "",
-      landusezone: "",
-      urbanizationlevel: "",
-      landvaluezone_number: "",
-      roadtype: "",
-      isstate: false,
-      purpose: "",
-      status: "",
-      area: "",
-      landOwnerName: "",
-      additionalstatements: "",
-      province: "",
-      district: "",
-      village: "",
-      unit: "",
-      road: "",
-    },
-    owner: {
-      ownerType: 'person',
-    },
-    landright: {
+    parcelno: "",
+    parcelno_old: "",
+    cadastremapno: "",
+    cadastremapno_old: "",
+    landusetype: "",
+    landusezone: "",
+    urbanizationlevel: "",
+    landvaluezone_number: "",
+    roadtype: -1,
+    isstate: false,
+    purpose: "",
+    status: -1,
+    area: 0,
+    additionalstatements: "",
+    province: "",
+    district: "",
+    village: "",
+    villagecode: "",
+    unit: "",
+    road: "",
+    barcode: "",
+    gid: "",
+    landrights: [{
+      gid: "",
+      parcelid: "",
+      ownerid: "",
       righttype: "",
-      landtitleno: "",
-      issueno: "",
-      registerbookno: "",
-      registerno: "",
-      approvaltype: "",
-      lthistory: "",
-      portion: "",
-      landtitledate: "",
-      landtitledeliverydate: "",
-      classificationdate: "",
-      printdate: "",
-      announcementdate: "",
-    }
+      landregisterbookno: "",
+      titlenumber: "",
+      titleeditionno: "",
+      landrightcategory: "",
+      landregistersheetno: "",
+      stateland: false,
+      barcode: "",
+      part: "",
+      history: "",
+      valid_from: "",
+      valid_till: "",
+      date_conclusion: "",
+      date_title_printed: "",
+      date_public_display: "",
+      date_title_send_to_ponre: "",
+      date_title_issued: "",
+      updated: "",
+      owner: {
+        gid: "",
+        ownertype: 'person',
+        title: "",
+        name: "",
+        province: "",
+        district: "",
+        village: "",
+        unit: "",
+        road: "",
+        houseno: "",
+        government_workplace: "",
+        isstate: false,
+        updated: ""
+      }
+    }]
   });
 
   const [isGovernmentLand, setIsGovernmentLandState] = useState(false);
 
-  // Handler for land form updates
-  const updateLandForm = useCallback((landData: any) => {
-    setFormData(prev => ({
-      ...prev,
-      land: landData
-    }));
-    setIsGovernmentLandState(landData.isstate);
+  // Handler for updating a specific land right
+  const updateLandRight = useCallback((index: number, landRightData: any) => {
+    setFormData(prev => {
+      const updatedLandRights = [...prev.landrights];
+      updatedLandRights[index] = {
+        ...updatedLandRights[index],
+        ...landRightData
+      };
+      
+      return {
+        ...prev,
+        landrights: updatedLandRights
+      };
+    });
   }, []);
 
-  // Handler for owner form updates
-  const updateOwnerForm = useCallback((ownerData: any) => {
-    setFormData(prev => ({
-      ...prev,
-      owner: ownerData
-    }));
+  // Handler for adding a new land right
+  const addLandRight = useCallback((data: any = {}) => {
+    setFormData(prev => {
+      const newLandRight = {
+        gid: "",
+        parcelid: "",
+        ownerid: "",
+        righttype: "",
+        landregisterbookno: "",
+        titlenumber: "",
+        titleeditionno: "",
+        landrightcategory: "",
+        landregistersheetno: "",
+        stateland: false,
+        barcode: "",
+        part: "",
+        history: "",
+        valid_from: "",
+        valid_till: "",
+        date_conclusion: "",
+        date_title_printed: "",
+        date_public_display: "",
+        date_title_send_to_ponre: "",
+        date_title_issued: "",
+        updated: "",
+        owner: {
+          gid: "",
+          ownertype: 'person',
+          title: "",
+          name: "",
+          province: "",
+          district: "",
+          village: "",
+          unit: "",
+          road: "",
+          houseno: "",
+          government_workplace: "",
+          isstate: false,
+          updated: ""
+        },
+        ...data
+      };
+      
+      return {
+        ...prev,
+        landrights: [...prev.landrights, newLandRight]
+      };
+    });
   }, []);
 
-  // Handler for land right form updates
-  const updateLandRightForm = useCallback((landRightData: any) => {
+  // Handler for removing a land right
+  const removeLandRight = useCallback((index: number) => {
+    setFormData(prev => {
+      const updatedLandRights = [...prev.landrights];
+      
+      // Ensure we always have at least one land right
+      if (updatedLandRights.length > 1) {
+        updatedLandRights.splice(index, 1);
+      }
+      
+      return {
+        ...prev,
+        landrights: updatedLandRights
+      };
+    });
+  }, []);
+
+  // Handler for updating form data
+  const updateFormData = useCallback((newData: Partial<FormData>) => {
     setFormData(prev => ({
       ...prev,
-      landright: landRightData
+      ...newData
     }));
   }, []);
 
@@ -192,9 +281,10 @@ export function FormProvider({ children }: { children: ReactNode }) {
   const contextValue: FormContextType = {
     formData,
     isGovernmentLand,
-    updateLandForm,
-    updateOwnerForm,
-    updateLandRightForm,
+    updateFormData,
+    updateLandRight,
+    addLandRight,
+    removeLandRight,
     setIsGovernmentLand: setIsGovernmentLandState
   };
 
