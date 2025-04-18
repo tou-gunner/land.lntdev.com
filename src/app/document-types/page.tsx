@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import PdfViewer from "../components/PdfViewer";
+import SplitViewPdfViewer from "../components/SplitViewPdfViewer";
 
 interface DocTypeRequest {
   parcel: string;
@@ -149,100 +149,113 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold mb-6">ອັບເດດປະເພດເອກະສານ</h1>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">ລະຫັດຕອນດິນ</label>
-            <input
-              type="text"
-              value={parcelId || ""}
-              readOnly
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 dark:bg-gray-700"
-            />
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">ຊື່ຜູ້ໃຊ້</label>
-            <input
-              type="text"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">ໜ້າ</label>
-            <div className="flex items-center">
-              <input
-                type="number"
-                value={currentPage}
-                onChange={(e) => setCurrentPage(Math.min(Math.max(1, parseInt(e.target.value) || 1), pdfPages))}
-                className="w-full text-center px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                min="1"
-                max={pdfPages}
-              />
-              <span className="ml-2 text-sm text-gray-500">ຈາກທັງໝົດ {pdfPages} ໜ້າ</span>
-            </div>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">ປະເພດເອກະສານ</label>
-            <select
-              value={docType}
-              onChange={(e) => setDocType(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {docTypeOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">ການໝູນເອກະສານ</label>
-            <select
-              value={rotation}
-              onChange={(e) => setRotation(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {rotationOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-          >
-            {loading ? "ກຳລັງບັນທຶກ..." : "ບັນທຶກ ແລະ ໄປໜ້າຕໍ່ໄປ"}
-          </button>
-          
-          {message && (
-            <div className={`mt-4 p-3 rounded-md ${message.includes('ຜິດພາດ') || message.includes('ບໍ່ສາມາດ') ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'}`}>
-              {message}
-            </div>
-          )}
-        </div>
-        
-        <PdfViewer 
+    <div className="">
+      {pdfFile ? (
+        <SplitViewPdfViewer 
           pdfUrl={pdfFile}
+          height="calc(100vh - 100px)"
+          defaultLayout="horizontal"
+          defaultRatio={0.6}
           initialPage={currentPage}
           initialRotation={rotation}
           onPageChange={handlePdfPageChange}
           onRotationChange={handlePdfRotationChange}
-          height="calc(100vh-300px)"
-        />
-      </div>
+        >
+          <div className="bg-white dark:bg-gray-800 p-3 shadow-md h-full overflow-y-auto">
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">ລະຫັດຕອນດິນ</label>
+              <input
+                type="text"
+                value={parcelId || ""}
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 dark:bg-gray-700"
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">ຊື່ຜູ້ໃຊ້</label>
+              <input
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">ໜ້າ</label>
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  value={currentPage}
+                  readOnly
+                  className="w-full text-center px-3 py-2 border bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400 rounded-md cursor-not-allowed opacity-80"
+                  min="1"
+                  max={pdfPages}
+                />
+              </div>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">ປະເພດເອກະສານ</label>
+              <select
+                value={docType}
+                onChange={(e) => setDocType(parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {docTypeOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">ການໝູນເອກະສານ</label>
+              <select
+                value={rotation}
+                onChange={(e) => setRotation(parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {rotationOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {loading ? "ກຳລັງບັນທຶກ..." : "ບັນທຶກ ແລະ ໄປໜ້າຕໍ່ໄປ"}
+            </button>
+            
+            {message && (
+              <div className={`mt-4 p-3 rounded-md ${message.includes('ຜິດພາດ') || message.includes('ບໍ່ສາມາດ') ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'}`}>
+                {message}
+              </div>
+            )}
+          </div>
+        </SplitViewPdfViewer>
+      ) : (
+        <div className="flex flex-col items-center justify-center min-h-[50vh]">
+          <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md w-full max-w-md">
+            <h1 className="text-2xl font-bold mb-4 text-center">ອັບເດດປະເພດເອກະສານ</h1>
+            <p className="text-red-500 text-center">{message || "ກຳລັງໂຫຼດເອກະສານ..."}</p>
+            <button
+              onClick={() => router.push('/land-management')}
+              className="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              ໄປທີ່ໜ້າຈັດການຂໍ້ມູນທີ່ດິນ
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

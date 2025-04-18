@@ -14,16 +14,29 @@ interface PdfViewer2Props {
   pdfUrl: string;
   height?: string;
   showControls?: boolean;
+  onPageChange?: (pageNumber: number) => void;
+  initialPage?: number;
+  initialRotation?: number;
+  onRotationChange?: (rotation: number) => void;
 }
 
-export default function PdfViewer2({ pdfUrl, height = '500px', showControls = true }: PdfViewer2Props) {
+export default function PdfViewer2({ 
+  pdfUrl, 
+  height = '500px', 
+  showControls = true, 
+  onPageChange,
+  initialPage = 1,
+  initialRotation = 0,
+  onRotationChange
+}: PdfViewer2Props) {
   const { theme } = useTheme();
   const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [pageNumber, setPageNumber] = useState<number>(initialPage);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [pageWidth, setPageWidth] = useState<number>(0);
   const [scale, setScale] = useState<number>(1.0);
+  const [rotation, setRotation] = useState<number>(initialRotation);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -52,9 +65,19 @@ export default function PdfViewer2({ pdfUrl, height = '500px', showControls = tr
     };
   }, []);
 
+  // Effect to sync with initialPage if it changes
+  useEffect(() => {
+    setPageNumber(initialPage);
+  }, [initialPage]);
+
+  // Effect to sync with initialRotation if it changes
+  useEffect(() => {
+    setRotation(initialRotation);
+  }, [initialRotation]);
+
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
-    setPageNumber(1);
+    setPageNumber(initialPage);
     setLoading(false);
     
     // Update width after document loads
@@ -64,8 +87,25 @@ export default function PdfViewer2({ pdfUrl, height = '500px', showControls = tr
     }
   }
 
+  // Effect to notify parent about page changes
+  useEffect(() => {
+    if (numPages > 0 && !loading && onPageChange) {
+      onPageChange(pageNumber);
+    }
+  }, [numPages, pageNumber, loading, onPageChange]);
+
+  // Effect to notify parent about rotation changes
+  useEffect(() => {
+    if (onRotationChange) {
+      onRotationChange(rotation);
+    }
+  }, [rotation, onRotationChange]);
+
   function changePage(offset: number) {
-    setPageNumber(prevPageNumber => prevPageNumber + offset);
+    setPageNumber(prevPageNumber => {
+      const newPageNumber = prevPageNumber + offset;
+      return newPageNumber;
+    });
   }
 
   function previousPage() {
@@ -86,6 +126,20 @@ export default function PdfViewer2({ pdfUrl, height = '500px', showControls = tr
 
   function resetZoom() {
     setScale(1.0);
+  }
+
+  function rotateClockwise() {
+    setRotation(prevRotation => {
+      const newRotation = (prevRotation + 90) % 360;
+      return newRotation;
+    });
+  }
+
+  function rotateCounterClockwise() {
+    setRotation(prevRotation => {
+      const newRotation = (prevRotation - 90 + 360) % 360;
+      return newRotation;
+    });
   }
 
   return (
@@ -142,6 +196,28 @@ export default function PdfViewer2({ pdfUrl, height = '500px', showControls = tr
                 <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
               </svg>
             </button>
+
+            <button
+              onClick={rotateCounterClockwise}
+              className="px-2 py-1 rounded bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+              title="ໝູນຊ້າຍ"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fillRule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2v1z"/>
+                <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466z"/>
+              </svg>
+            </button>
+            
+            <button
+              onClick={rotateClockwise}
+              className="px-2 py-1 rounded bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+              title="ໝູນຂວາ"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fillRule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+              </svg>
+            </button>
           </div>
         </div>
       )}
@@ -180,6 +256,7 @@ export default function PdfViewer2({ pdfUrl, height = '500px', showControls = tr
                 scale={scale}
                 width={pageWidth}
                 canvasBackground={theme === 'dark' ? '#333' : 'transparent'}
+                rotate={rotation}
               />
             )}
           </Document>

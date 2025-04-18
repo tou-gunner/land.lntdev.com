@@ -10,6 +10,10 @@ interface SplitViewPdfViewerProps {
   defaultLayout?: 'horizontal' | 'vertical';
   defaultRatio?: number;
   height?: string;
+  initialPage?: number;
+  initialRotation?: number;
+  onPageChange?: (pageNumber: number) => void;
+  onRotationChange?: (rotation: number) => void;
 }
 
 export default function SplitViewPdfViewer({
@@ -17,7 +21,11 @@ export default function SplitViewPdfViewer({
   children,
   defaultLayout = 'horizontal',
   defaultRatio = 0.5,
-  height = '600px'
+  height = '600px',
+  initialPage = 1,
+  initialRotation = 0,
+  onPageChange,
+  onRotationChange
 }: SplitViewPdfViewerProps) {
   const { theme } = useTheme();
   const [layout, setLayout] = useState<'horizontal' | 'vertical'>(defaultLayout);
@@ -136,6 +144,10 @@ export default function SplitViewPdfViewer({
             pdfUrl={pdfUrl}
             height="100%"
             showControls={true}
+            initialPage={initialPage}
+            initialRotation={initialRotation}
+            onPageChange={onPageChange}
+            onRotationChange={onRotationChange}
           />
         </div>
 
@@ -168,7 +180,7 @@ export default function SplitViewPdfViewer({
 
         {/* Content area */}
         <div 
-          className="flex-1 overflow-auto transition-all duration-200 p-3"
+          className="flex-1 overflow-auto transition-all duration-200"
           style={{ 
             backgroundColor: 'var(--card-background)',
             color: 'var(--card-foreground)'
