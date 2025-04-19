@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, ReactNode } from 'react';
-import PdfViewer2 from './PdfViewer2';
+import React, { useState, ReactNode, useRef, useImperativeHandle, forwardRef } from 'react';
+import PdfViewer2, { PdfViewer2Ref } from './PdfViewer2';
 import { useTheme } from './ThemeProvider';
 
 interface SplitViewPdfViewerProps {
@@ -14,9 +14,22 @@ interface SplitViewPdfViewerProps {
   initialRotation?: number;
   onPageChange?: (pageNumber: number) => void;
   onRotationChange?: (rotation: number) => void;
+  onLoadSuccess?: (pdf: { numPages: number }) => void;
 }
 
-export default function SplitViewPdfViewer({
+export interface SplitViewPdfViewerRef {
+  nextPage: () => void;
+  previousPage: () => void;
+  goToPage: (page: number) => void;
+  rotateClockwise: () => void;
+  rotateCounterClockwise: () => void;
+  setRotation: (angle: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetZoom: () => void;
+}
+
+const SplitViewPdfViewer = forwardRef<SplitViewPdfViewerRef, SplitViewPdfViewerProps>(({
   pdfUrl,
   children,
   defaultLayout = 'horizontal',
@@ -25,13 +38,46 @@ export default function SplitViewPdfViewer({
   initialPage = 1,
   initialRotation = 0,
   onPageChange,
-  onRotationChange
-}: SplitViewPdfViewerProps) {
+  onRotationChange,
+  onLoadSuccess
+}, ref) => {
   const { theme } = useTheme();
   const [layout, setLayout] = useState<'horizontal' | 'vertical'>(defaultLayout);
   const [ratio, setRatio] = useState(defaultRatio);
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState(0);
+  const pdfViewerRef = useRef<PdfViewer2Ref>(null);
+
+  // Expose imperative methods
+  useImperativeHandle(ref, () => ({
+    nextPage: () => {
+      pdfViewerRef.current?.nextPage();
+    },
+    previousPage: () => {
+      pdfViewerRef.current?.previousPage();
+    },
+    goToPage: (page: number) => {
+      pdfViewerRef.current?.goToPage(page);
+    },
+    rotateClockwise: () => {
+      pdfViewerRef.current?.rotateClockwise();
+    },
+    rotateCounterClockwise: () => {
+      pdfViewerRef.current?.rotateCounterClockwise();
+    },
+    setRotation: (angle: number) => {
+      pdfViewerRef.current?.setRotation(angle);
+    },
+    zoomIn: () => {
+      pdfViewerRef.current?.zoomIn();
+    },
+    zoomOut: () => {
+      pdfViewerRef.current?.zoomOut();
+    },
+    resetZoom: () => {
+      pdfViewerRef.current?.resetZoom();
+    }
+  }));
 
   // Start dragging the divider
   const handleDragStart = (e: React.MouseEvent) => {
@@ -141,6 +187,7 @@ export default function SplitViewPdfViewer({
           }}
         >
           <PdfViewer2
+            ref={pdfViewerRef}
             pdfUrl={pdfUrl}
             height="100%"
             showControls={true}
@@ -148,6 +195,7 @@ export default function SplitViewPdfViewer({
             initialRotation={initialRotation}
             onPageChange={onPageChange}
             onRotationChange={onRotationChange}
+            onLoadSuccess={onLoadSuccess}
           />
         </div>
 
@@ -191,4 +239,8 @@ export default function SplitViewPdfViewer({
       </div>
     </div>
   );
-} 
+});
+
+SplitViewPdfViewer.displayName = 'SplitViewPdfViewer';
+
+export default SplitViewPdfViewer; 

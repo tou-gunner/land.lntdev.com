@@ -1,16 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import SplitViewPdfViewer from "../components/SplitViewPdfViewer";
-
-interface DocTypeRequest {
-  parcel: string;
-  page: number;
-  doctype: number;
-  rotate: number;
-  user_name: string;
-}
+import SplitViewPdfViewer, { SplitViewPdfViewerRef } from "../components/SplitViewPdfViewer";
+import { DocTypeRequest, updateDocumentTypes } from "../lib/api";
+import { useGetDocumentTypesQuery } from "../redux/api/apiSlice";
 
 interface DocumentTypeUpdateProps {
   parcelId?: string;
@@ -23,14 +17,20 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
   const parcelId = propParcelId || parcelIdFromUrl;
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
   
+  const pdfViewerRef = useRef<SplitViewPdfViewerRef>(null);
   const [pdfPages, setPdfPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [docType, setDocType] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
-  const [userName, setUserName] = useState<string>("");
+  const [userName, setUserName] = useState<string>("dol11");
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
   const [pdfFile, setPdfFile] = useState<string>("");
+  const [savedPages, setSavedPages] = useState<DocTypeRequest[]>([]);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Fetch document types from API
+  const { data: documentTypes, isLoading: isLoadingDocTypes, error: docTypesError } = useGetDocumentTypesQuery();
 
   useEffect(() => {
     if (!parcelId) {
@@ -73,56 +73,106 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
     setRotation(rotationAngle);
   };
 
+  // Function to go to previous page using imperative API
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      pdfViewerRef.current?.previousPage();
+    }
+  };
+
+  // Function to go to next page using imperative API
+  const goToNextPage = () => {
+    if (currentPage < pdfPages) {
+      pdfViewerRef.current?.nextPage();
+    }
+  };
+
+  // Function to set rotation using imperative API
+  const setRotationImperative = (angle: number) => {
+    pdfViewerRef.current?.setRotation(angle);
+  };
+
+  const saveCurrentPage = () => {
+    if (!parcelId || !userName) {
+      setMessage("ຕ້ອງລະບຸລະຫັດຕອນດິນ ແລະ ຊື່ຜູ້ໃຊ້");
+      return false;
+    }
+    
+    if (!documentTypes || documentTypes.length === 0) {
+      setMessage("ບໍ່ສາມາດບັນທຶກໄດ້ ເນື່ອງຈາກບໍ່ມີຂໍ້ມູນປະເພດເອກະສານ");
+      return false;
+    }
+
+    // Check if this page already exists in the saved pages
+    const existingPageIndex = savedPages.findIndex(page => page.page === currentPage);
+    
+    const pageData: DocTypeRequest = {
+      parcel: parcelId,
+      page: currentPage,
+      doctype: docType,
+      rotate: rotation,
+      user_name: userName
+    };
+
+    // Update or add the page
+    if (existingPageIndex >= 0) {
+      // Update existing page
+      const updatedPages = [...savedPages];
+      updatedPages[existingPageIndex] = pageData;
+      setSavedPages(updatedPages);
+    } else {
+      // Add new page
+      setSavedPages([...savedPages, pageData]);
+    }
+    return true;
+  };
+
+  const handleSavePage = () => {
+    const saved = saveCurrentPage();
+    if (saved && pdfPages > currentPage) {
+      // Go to the next page if current page was saved successfully
+      // and we're not on the last page
+      goToNextPage();
+    }
+  };
+
   const handleSubmit = async () => {
     if (!parcelId || !userName) {
       setMessage("ຕ້ອງລະບຸລະຫັດຕອນດິນ ແລະ ຊື່ຜູ້ໃຊ້");
       return;
     }
     
+    // Save current page first
+    const saved = saveCurrentPage();
+    if (!saved) return;
+    
+    // If no pages saved, show error
+    if (savedPages.length === 0) {
+      setMessage("ບໍ່ມີໜ້າເອກະສານທີ່ຈະບັນທຶກ");
+      return;
+    }
+    
     try {
-      setLoading(true);
+      setIsSaving(true);
+      setMessage("ກຳລັງບັນທຶກຂໍ້ມູນ...");
       
-      const docTypeRequest: DocTypeRequest = {
-        parcel: parcelId,
-        page: currentPage,
-        doctype: docType,
-        rotate: rotation,
-        user_name: userName
-      };
+      // Send data using the API function
+      const result = await updateDocumentTypes(savedPages);
       
-      const response = await fetch(`${apiBaseUrl}/parcel/save`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify([docTypeRequest]), // API expects an array
-      });
+      setMessage("ບັນທຶກຂໍ້ມູນສຳເລັດ");
       
-      if (!response.ok) {
-        throw new Error("ບໍ່ສາມາດອັບເດດປະເພດເອກະສານໄດ້");
-      }
+      // Redirect to land management page after success
+      // setTimeout(() => {
+      //   router.push('/land-management');
+      // }, 2000);
       
-      setMessage("ອັບເດດປະເພດເອກະສານສຳເລັດແລ້ວ!");
-      setLoading(false);
-      
-      // Move to next page if not at the end
-      if (currentPage < pdfPages) {
-        setCurrentPage(prevPage => prevPage + 1);
-      }
     } catch (error) {
-      console.error("Error updating document type:", error);
-      setMessage("ເກີດຂໍ້ຜິດພາດໃນການອັບເດດປະເພດເອກະສານ");
-      setLoading(false);
+      console.error("Error updating document types:", error);
+      setMessage(`ເກີດຂໍ້ຜິດພາດ: ${error instanceof Error ? error.message : 'ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້'}`);
+    } finally {
+      setIsSaving(false);
     }
   };
-
-  const docTypeOptions = [
-    { value: 1, label: "ໃບຕາດິນ" },
-    { value: 2, label: "ເອກະສານສຳຫຼວດ" },
-    { value: 3, label: "ບັດປະຈຳຕົວຂອງເຈົ້າຂອງ" },
-    { value: 4, label: "ສັນຍາ" },
-    { value: 5, label: "ອື່ນໆ" }
-  ];
 
   const rotationOptions = [
     { value: 0, label: "0°" },
@@ -148,10 +198,27 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
     );
   }
 
+  // Find if current page is saved
+  const currentPageSaved = savedPages.find(page => page.page === currentPage);
+
+  // Group document types by group for better organization in select
+  const groupedDocTypes: {[key: string]: typeof documentTypes} = {};
+  
+  if (documentTypes) {
+    documentTypes.forEach(type => {
+      const group = type.group || 'ອື່ນໆ';
+      if (!groupedDocTypes[group]) {
+        groupedDocTypes[group] = [];
+      }
+      groupedDocTypes[group].push(type);
+    });
+  }
+
   return (
     <div className="">
       {pdfFile ? (
         <SplitViewPdfViewer 
+          ref={pdfViewerRef}
           pdfUrl={pdfFile}
           height="calc(100vh - 100px)"
           defaultLayout="horizontal"
@@ -160,63 +227,148 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
           initialRotation={rotation}
           onPageChange={handlePdfPageChange}
           onRotationChange={handlePdfRotationChange}
+          onLoadSuccess={(pdf) => {
+            setPdfPages(pdf.numPages);
+          }}
         >
           <div className="bg-white dark:bg-gray-800 p-3 shadow-md h-full overflow-y-auto">
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">ລະຫັດຕອນດິນ</label>
+              {/* <label className="block text-sm font-medium mb-2">ລະຫັດຕອນດິນ</label> */}
               <input
-                type="text"
-                value={parcelId || ""}
+                type="hidden"
+                value={parcelId}
                 readOnly
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 dark:bg-gray-700"
               />
             </div>
             
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">ຊື່ຜູ້ໃຊ້</label>
+              {/* <label className="block text-sm font-medium mb-2">ຊື່ຜູ້ໃຊ້</label> */}
               <input
-                type="text"
+                type="hidden"
                 value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
+                // onChange={(e) => setUserName(e.target.value)}
+                // className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                // required
               />
             </div>
             
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">ໜ້າ</label>
+              {/* <label className="block text-sm font-medium mb-2">ໜ້າ</label> */}
               <div className="flex items-center">
                 <input
-                  type="number"
+                  type="hidden"
                   value={currentPage}
-                  readOnly
-                  className="w-full text-center px-3 py-2 border bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400 rounded-md cursor-not-allowed opacity-80"
-                  min="1"
-                  max={pdfPages}
+                  // readOnly
+                  // className="w-full text-center px-3 py-2 border bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400 rounded-md cursor-not-allowed opacity-80"
+                  // min="1"
+                  // max={pdfPages}
                 />
+                {/* {currentPageSaved && (
+                  <span className="ml-2 text-sm text-green-600 dark:text-green-400">
+                    ✓ ຖືກບັນທຶກແລ້ວ
+                  </span>
+                )} */}
               </div>
             </div>
             
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">ປະເພດເອກະສານ</label>
-              <select
-                value={docType}
-                onChange={(e) => setDocType(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {docTypeOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              {isLoadingDocTypes ? (
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-center">
+                  ກຳລັງໂຫຼດຂໍ້ມູນ...
+                </div>
+              ) : docTypesError ? (
+                <div className="w-full px-3 py-2 border border-red-300 rounded-md bg-red-50 text-red-700 text-center">
+                  ບໍ່ສາມາດໂຫຼດຂໍ້ມູນປະເພດເອກະສານໄດ້
+                </div>
+              ) : documentTypes && Object.keys(groupedDocTypes).length > 0 ? (
+                <select
+                  value={currentPageSaved?.doctype || ""}
+                  onChange={(e) => {
+                    const newDocType = parseInt(e.target.value);
+                    setDocType(newDocType);
+                    // Auto-save when document type changes
+                    if (parcelId && userName) {
+                      const pageData: DocTypeRequest = {
+                        parcel: parcelId,
+                        page: currentPage,
+                        doctype: newDocType,
+                        rotate: rotation,
+                        user_name: userName
+                      };
+                      
+                      // Update or add the page
+                      const existingPageIndex = savedPages.findIndex(page => page.page === currentPage);
+                      if (existingPageIndex >= 0) {
+                        // Update existing page
+                        const updatedPages = [...savedPages];
+                        updatedPages[existingPageIndex] = pageData;
+                        setSavedPages(updatedPages);
+                      } else {
+                        // Add new page
+                        setSavedPages([...savedPages, pageData]);
+                      }
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {!currentPageSaved && (
+                    <option value="" disabled>
+                      --- ກະລຸນາເລືອກປະເພດເອກະສານ ---
+                    </option>
+                  )}
+                  {Object.entries(groupedDocTypes).map(([group, types]) => (
+                    <optgroup key={group} label={group}>
+                      {types && types.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              ) : (
+                <div className="w-full px-3 py-2 border border-yellow-300 rounded-md bg-yellow-50 text-yellow-700 text-center">
+                  ບໍ່ມີຂໍ້ມູນປະເພດເອກະສານ
+                </div>
+              )}
             </div>
             
             <div className="mb-6">
               <label className="block text-sm font-medium mb-2">ການໝູນເອກະສານ</label>
               <select
-                value={rotation}
-                onChange={(e) => setRotation(parseInt(e.target.value))}
+                value={currentPageSaved?.rotate || 0}
+                onChange={(e) => {
+                  const angle = parseInt(e.target.value);
+                  setRotation(angle);
+                  setRotationImperative(angle);
+                  
+                  // Auto-save when rotation changes
+                  if (parcelId && userName && currentPageSaved) {
+                    const pageData: DocTypeRequest = {
+                      parcel: parcelId,
+                      page: currentPage,
+                      doctype: docType,
+                      rotate: angle,
+                      user_name: userName
+                    };
+                    
+                    // Update or add the page
+                    const existingPageIndex = savedPages.findIndex(page => page.page === currentPage);
+                    if (existingPageIndex >= 0) {
+                      // Update existing page
+                      const updatedPages = [...savedPages];
+                      updatedPages[existingPageIndex] = pageData;
+                      setSavedPages(updatedPages);
+                    } else {
+                      // Add new page
+                      setSavedPages([...savedPages, pageData]);
+                    }
+                    
+                    setMessage(`ບັນທຶກຂໍ້ມູນຂອງໜ້າທີ່ ${currentPage} ສຳເລັດ`);
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {rotationOptions.map(option => (
@@ -227,13 +379,42 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
               </select>
             </div>
             
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              {loading ? "ກຳລັງບັນທຶກ..." : "ບັນທຶກ ແລະ ໄປໜ້າຕໍ່ໄປ"}
-            </button>
+            <div className="flex flex-col space-y-2">
+              <button
+                onClick={handleSubmit}
+                disabled={loading || isSaving || savedPages.length === 0 || savedPages.length < pdfPages}
+                className={`w-full px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  loading || isSaving || savedPages.length === 0 || savedPages.length < pdfPages
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+                title={savedPages.length < pdfPages ? `ຍັງເຫຼືອ ${pdfPages - savedPages.length} ໜ້າທີ່ຍັງບໍ່ໄດ້ບັນທຶກ` : ""}
+              >
+                {isSaving ? "ກຳລັງບັນທຶກ..." : "ບັນທຶກທັງໝົດ ແລະ ກັບໄປໜ້າຫຼັກ"}
+              </button>
+            </div>
+            
+            <div className="mt-4">
+              <p className="text-sm font-medium mb-2">ບັນທຶກແລ້ວ: {savedPages.length} ໜ້າ</p>
+              {savedPages.length > 0 && (
+                <div className="mt-2 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 max-h-40 overflow-y-auto">
+                  {savedPages.map((page, index) => (
+                    <div 
+                      key={index} 
+                      className="text-xs py-1 flex justify-between cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 px-2 rounded"
+                      onClick={() => pdfViewerRef.current?.goToPage(page.page)}
+                    >
+                      <span>ໜ້າ {page.page}</span>
+                      <span>
+                        {documentTypes
+                          ? documentTypes.find(opt => opt.value === page.doctype)?.label || `ປະເພດ ${page.doctype}`
+                          : `ປະເພດ ${page.doctype}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             
             {message && (
               <div className={`mt-4 p-3 rounded-md ${message.includes('ຜິດພາດ') || message.includes('ບໍ່ສາມາດ') ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'}`}>

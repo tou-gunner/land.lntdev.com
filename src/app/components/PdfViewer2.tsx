@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Document, Page } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
@@ -18,17 +18,31 @@ interface PdfViewer2Props {
   initialPage?: number;
   initialRotation?: number;
   onRotationChange?: (rotation: number) => void;
+  onLoadSuccess?: (pdf: { numPages: number }) => void;
 }
 
-export default function PdfViewer2({ 
+export interface PdfViewer2Ref {
+  nextPage: () => void;
+  previousPage: () => void;
+  goToPage: (page: number) => void;
+  rotateClockwise: () => void;
+  rotateCounterClockwise: () => void;
+  setRotation: (angle: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetZoom: () => void;
+}
+
+const PdfViewer2 = forwardRef<PdfViewer2Ref, PdfViewer2Props>(({ 
   pdfUrl, 
   height = '500px', 
   showControls = true, 
   onPageChange,
   initialPage = 1,
   initialRotation = 0,
-  onRotationChange
-}: PdfViewer2Props) {
+  onRotationChange,
+  onLoadSuccess
+}, ref) => {
   const { theme } = useTheme();
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(initialPage);
@@ -39,6 +53,41 @@ export default function PdfViewer2({
   const [rotation, setRotation] = useState<number>(initialRotation);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Expose imperative methods
+  useImperativeHandle(ref, () => ({
+    nextPage: () => {
+      changePage(1);
+    },
+    previousPage: () => {
+      changePage(-1);
+    },
+    goToPage: (page: number) => {
+      if (page >= 1 && page <= numPages) {
+        setPageNumber(page);
+      }
+    },
+    rotateClockwise: () => {
+      const newRotation = (rotation + 90) % 360;
+      setRotation(newRotation);
+    },
+    rotateCounterClockwise: () => {
+      const newRotation = (rotation - 90 + 360) % 360;
+      setRotation(newRotation);
+    },
+    setRotation: (angle: number) => {
+      setRotation(angle % 360);
+    },
+    zoomIn: () => {
+      setScale(prevScale => Math.min(prevScale + 0.2, 3));
+    },
+    zoomOut: () => {
+      setScale(prevScale => Math.max(prevScale - 0.2, 0.5));
+    },
+    resetZoom: () => {
+      setScale(1.0);
+    }
+  }));
 
   // Update page width based on container size
   useEffect(() => {
@@ -85,6 +134,11 @@ export default function PdfViewer2({
       const containerWidth = containerRef.current.clientWidth - 20;
       setPageWidth(containerWidth);
     }
+
+    // Call onLoadSuccess callback if provided
+    if (onLoadSuccess) {
+      onLoadSuccess({ numPages });
+    }
   }
 
   // Effect to notify parent about page changes
@@ -104,7 +158,10 @@ export default function PdfViewer2({
   function changePage(offset: number) {
     setPageNumber(prevPageNumber => {
       const newPageNumber = prevPageNumber + offset;
-      return newPageNumber;
+      if (newPageNumber >= 1 && newPageNumber <= numPages) {
+        return newPageNumber;
+      }
+      return prevPageNumber;
     });
   }
 
@@ -264,4 +321,8 @@ export default function PdfViewer2({
       </div>
     </div>
   );
-}
+});
+
+PdfViewer2.displayName = 'PdfViewer2';
+
+export default PdfViewer2;

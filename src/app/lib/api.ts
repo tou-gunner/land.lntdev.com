@@ -21,6 +21,14 @@ interface TransformedItem {
   englishName?: string;
 }
 
+export interface DocTypeRequest {
+  parcel: string;
+  page: number;
+  doctype: number;
+  rotate: number;
+  user_name: string;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Helper function to transform API items to the format needed by dropdowns
@@ -30,6 +38,29 @@ function transformApiItems(items: ApiItem[]): TransformedItem[] {
     name: item.description_lao || item.name || '',
     englishName: item.description_english || ''
   }));
+}
+
+// Document type management functions
+export async function updateDocumentTypes(docTypes: DocTypeRequest[]) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/parcel/pdf/update_document_type`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(docTypes),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to update document types");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating document types:', error);
+    throw error;
+  }
 }
 
 export async function fetchLandUseZones() {

@@ -41,6 +41,21 @@ interface Village {
   villagename: string;
 }
 
+interface DocumentType {
+  doc_type: number;
+  description_lao: string;
+  group_id: number;
+  group_name: string;
+  object_name: string;
+}
+
+export interface DocTypeOption {
+  value: number;
+  label: string;
+  group?: string;
+  objectName?: string;
+}
+
 // Create the API slice
 export const apiSlice = createApi({
   reducerPath: 'api',
@@ -58,6 +73,22 @@ export const apiSlice = createApi({
             id: province.provincecode,
             name: province.province_lao || province.province_english,
             value: province.province_lao || province.province_english
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Get Document Types
+    getDocumentTypes: builder.query<DocTypeOption[], void>({
+      query: () => '/utility/documenttypes',
+      transformResponse: (response: ApiResponse<DocumentType[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            value: item.doc_type,
+            label: item.description_lao,
+            group: item.group_name,
+            objectName: item.object_name
           }));
         }
         return [];
@@ -284,5 +315,6 @@ export const {
   useGetTitlesQuery,
   useSearchLandParcelQuery,
   useSaveParcelMutation,
-  useGetParcelInfoQuery
+  useGetParcelInfoQuery,
+  useGetDocumentTypesQuery
 } = apiSlice; 
