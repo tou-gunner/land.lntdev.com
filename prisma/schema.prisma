@@ -14,23 +14,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id             Int       @id @default(autoincrement())
+model user {
+  gid            String    @id @default(uuid()) //auto generate uuid
   username       String    @unique
   phone          String?   @unique
   password       String
-  fullName       String?
+  fullname       String?
   role           String    @default("page grouping")
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  is_active      Boolean   @default(true)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  @@map("users_2")
 }
 
 model grouping {
-  id              Int @id @default(autoincrement())
+  gid             String @id @default(uuid()) //auto generate uuid
   user_id         String
   barcode         String
-  status          String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  status          String   @default("pending")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 }

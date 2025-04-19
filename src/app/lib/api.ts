@@ -24,7 +24,7 @@ interface TransformedItem {
 export interface DocTypeRequest {
   parcel: string;
   page: number;
-  doctype: number;
+  doctype: string;
   rotate: number;
   user_name: string;
 }

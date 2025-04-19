@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { apiSlice } from "../redux/api/apiSlice";
 import { ReduxProvider } from "../redux/provider";
+import { getCurrentUser } from "../lib/auth";
 
 interface Parcel {
   gid: string;
@@ -20,33 +21,6 @@ interface Parcel {
   provinceCode?: string;
 }
 
-interface Province {
-  provincecode: string;
-  province_english: string;
-  province_lao: string;
-  id: string;
-  name: string;
-}
-
-interface District {
-  districtcode: string;
-  district_english: string;
-  district_lao: string;
-  id: string;
-  name: string;
-}
-
-interface Village {
-  provinceid: string;
-  provincename: string;
-  districtid: string;
-  districtname: string;
-  villageid: string;
-  villagename: string;
-  id: string;
-  name: string;
-}
-
 function DocumentsListContent() {
   const router = useRouter();
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
@@ -58,7 +32,6 @@ function DocumentsListContent() {
   const [totalItems, setTotalItems] = useState<number>(0);
   
   // Search and filter states
-  const [searchText, setSearchText] = useState<string>("");
   const [selectedProvince, setSelectedProvince] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [selectedVillage, setSelectedVillage] = useState<string>("");
@@ -71,6 +44,12 @@ function DocumentsListContent() {
   const { data: villages = [] } = apiSlice.useGetVillagesQuery(selectedDistrict, { 
     skip: !selectedDistrict 
   });
+  
+  // Add lockingParcel state to track API call status
+  const [lockingParcel, setLockingParcel] = useState<string | null>(null);
+
+  // Cache the current user with useMemo to avoid unnecessary retrieval on re-renders
+  const currentUser = useMemo(() => getCurrentUser(), []);
 
   useEffect(() => {
     fetchParcels();
@@ -101,14 +80,9 @@ function DocumentsListContent() {
       // Construct the query URL with filters
       let url = `${apiBaseUrl}/parcel/list_parcels_filter?page_no=${currentPage}&offset=${itemsPerPage}`;
       
-      // Get the selected provinces/districts/villages full names
-      const selectedProvinceName = provinces.find(p => p.id === selectedProvince)?.value || selectedProvince;
-      const selectedDistrictName = districts.find(d => d.id === selectedDistrict)?.value || selectedDistrict;
-      const selectedVillageName = villages.find(v => v.id === selectedVillage)?.value || selectedVillage;
-      
-      if (selectedProvince) url += `&province=${encodeURIComponent(selectedProvinceName)}`;
-      if (selectedDistrict) url += `&district=${encodeURIComponent(selectedDistrictName)}`;
-      if (selectedVillage) url += `&village=${encodeURIComponent(selectedVillageName)}`;
+      if (selectedProvince) url += `&province=${selectedProvince}`;
+      if (selectedDistrict) url += `&district=${selectedDistrict}`;
+      if (selectedVillage) url += `&village=${selectedVillage}`;
       
       const response = await fetch(url);
       
@@ -117,9 +91,6 @@ function DocumentsListContent() {
       }
       
       const data = await response.json();
-      
-      // Log for debugging
-      console.log('API Response:', data);
 
       // Define the type for the API response items
       interface ApiParcelItem {
@@ -137,8 +108,16 @@ function DocumentsListContent() {
         total_pages: number;
       }
 
+      // Filter out parcels that are locked by other users
+      const filteredData = data.data.filter((item: ApiParcelItem) => {
+        // Show parcels with no user_name (not locked)
+        // Or parcels locked by the current user
+        return item.user_name === null || 
+               (currentUser && item.user_name === currentUser.user_name);
+      });
+
       // Transform the data structure to match our interface
-      const transformedParcels = data.data.map((item: ApiParcelItem) => {
+      const transformedParcels = filteredData.map((item: ApiParcelItem) => {
         // Try to find the province name from our Redux state or from API response
         const provinceName = item.province_lao || getProvinceName(item.province_code);
         
@@ -168,9 +147,8 @@ function DocumentsListContent() {
       
       setParcels(transformedParcels);
       
-      // Get the total count from the first item if available
-      const totalCount = data.data.length > 0 ? data.data[0].total_count : 0;
-      setTotalItems(totalCount);
+      // Set total items to the length of filtered data
+      setTotalItems(filteredData.length);
       
       // Function to trigger loading of all location data needed for the display
       const loadAllLocations = async (data: any) => {
@@ -243,7 +221,6 @@ function DocumentsListContent() {
   };
 
   const handleReset = () => {
-    setSearchText("");
     setSelectedProvince("");
     setSelectedDistrict("");
     setSelectedVillage("");
@@ -259,20 +236,6 @@ function DocumentsListContent() {
     setCurrentPage(1); // Reset to first page when changing items per page
   };
 
-  const filteredParcels = parcels.filter(parcel => {
-    if (!searchText) return true;
-    
-    const search = searchText.toLowerCase();
-    return (
-      parcel.parcelno.toLowerCase().includes(search) ||
-      parcel.cadastremapno.toLowerCase().includes(search) ||
-      parcel.barcode.toLowerCase().includes(search) ||
-      parcel.village.toLowerCase().includes(search) ||
-      parcel.district.toLowerCase().includes(search) ||
-      parcel.province.toLowerCase().includes(search)
-    );
-  });
-
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const pageNumbers = Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
     if (totalPages <= 5) return i + 1;
@@ -282,6 +245,54 @@ function DocumentsListContent() {
     
     return currentPage - 2 + i;
   });
+
+  // Add a function to handle locking and redirect
+  const handleManageDocuments = async (parcelBarcode: string) => {
+    try {
+      setLockingParcel(parcelBarcode);
+      
+      // Use the memoized user instead of calling getCurrentUser() again
+      if (!currentUser) {
+        throw new Error('User not authenticated');
+      }
+      
+      // Use the username from auth
+      const username = currentUser.user_name;
+      
+      // Check the OpenAPI spec for the correct endpoint format
+      const url = `${apiBaseUrl}/parcel/user_lock_record`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          user_name: username,
+          parcel: parcelBarcode
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to lock the parcel record');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // If successful, redirect to the documents-types page
+        router.push(`/documents-types?parcel=${parcelBarcode}`);
+      } else {
+        throw new Error(result.message || 'Failed to lock the parcel record');
+      }
+    } catch (error) {
+      console.error('Error locking parcel record:', error);
+      setError('ບໍ່ສາມາດລັອກເອກະສານຕອນດິນໄດ້. ກະລຸນາລອງໃໝ່ອີກຄັ້ງ.');
+    } finally {
+      setLockingParcel(null);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -306,18 +317,6 @@ function DocumentsListContent() {
       {/* Filter Section */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
         <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div>
-            <label htmlFor="searchText" className="block text-sm font-medium mb-1">ຄົ້ນຫາ</label>
-            <input
-              type="text"
-              id="searchText"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="ຄົ້ນຫາຈາກທຸກຊ່ອງ..."
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          
           <div>
             <label htmlFor="province" className="block text-sm font-medium mb-1">ແຂວງ</label>
             <select
@@ -413,14 +412,14 @@ function DocumentsListContent() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                {filteredParcels.length === 0 ? (
+                {parcels.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                       ບໍ່ພົບຂໍ້ມູນຕອນດິນ
                     </td>
                   </tr>
                 ) : (
-                  filteredParcels.map((parcel) => (
+                  parcels.map((parcel) => (
                     <tr key={parcel.gid} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.barcode}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.village}</td>
@@ -428,15 +427,20 @@ function DocumentsListContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.province}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-3">
-                          <Link 
-                            href={`/documents-types?parcel=${parcel.barcode}`}
+                          <button
+                            onClick={() => handleManageDocuments(parcel.barcode)}
                             className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                             title="ຈັດການເອກະສານຕອນດິນ"
+                            disabled={lockingParcel === parcel.barcode}
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </Link>
+                            {lockingParcel === parcel.barcode ? (
+                              <div className="animate-spin h-5 w-5 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            )}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -449,7 +453,7 @@ function DocumentsListContent() {
           {/* Pagination */}
           <div className="flex justify-between items-center mt-6">
             <div className="text-sm text-gray-700 dark:text-gray-300">
-              ສະແດງ <span className="font-medium">{filteredParcels.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> ຫາ <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> ຈາກທັງໝົດ <span className="font-medium">{totalItems}</span> ລາຍການ
+              ສະແດງ <span className="font-medium">{parcels.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> ຫາ <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> ຈາກທັງໝົດ <span className="font-medium">{totalItems}</span> ລາຍການ
             </div>
             <div className="flex space-x-1">
               <button

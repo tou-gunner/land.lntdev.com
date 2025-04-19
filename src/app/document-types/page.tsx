@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SplitViewPdfViewer, { SplitViewPdfViewerRef } from "../components/SplitViewPdfViewer";
 import { DocTypeRequest, updateDocumentTypes } from "../lib/api";
 import { useGetDocumentTypesQuery } from "../redux/api/apiSlice";
+import { getCurrentUser } from "../lib/auth";
 
 interface DocumentTypeUpdateProps {
   parcelId?: string;
@@ -17,12 +18,14 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
   const parcelId = propParcelId || parcelIdFromUrl;
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
   
+  // Get the user from storage using useMemo
+  const user = useMemo(() => getCurrentUser(), []);
+  
   const pdfViewerRef = useRef<SplitViewPdfViewerRef>(null);
   const [pdfPages, setPdfPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [docType, setDocType] = useState<number>(1);
+  const [docType, setDocType] = useState<string>("");
   const [rotation, setRotation] = useState<number>(0);
-  const [userName, setUserName] = useState<string>("dol11");
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
   const [pdfFile, setPdfFile] = useState<string>("");
@@ -31,6 +34,14 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
 
   // Fetch document types from API
   const { data: documentTypes, isLoading: isLoadingDocTypes, error: docTypesError } = useGetDocumentTypesQuery();
+
+  // Redirect if no user found
+  useEffect(() => {
+    if (!user) {
+      setMessage("ກະລຸນາເຂົ້າສູ່ລະບົບກ່ອນ");
+      router.push('/login');
+    }
+  }, [router, user]);
 
   useEffect(() => {
     if (!parcelId) {
@@ -65,8 +76,15 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
     fetchPdfInfo();
   }, [parcelId, apiBaseUrl]);
 
+  useEffect(() => {
+    setDocType(currentPageSaved?.doctype || "");
+    setRotationImperative(currentPageSaved?.rotate || 0);
+  }, [currentPage]);
+
   const handlePdfPageChange = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
+    if (pageNumber !== currentPage) {
+      setCurrentPage(pageNumber);
+    }
   };
 
   const handlePdfRotationChange = (rotationAngle: number) => {
@@ -93,7 +111,7 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
   };
 
   const saveCurrentPage = () => {
-    if (!parcelId || !userName) {
+    if (!parcelId || !user) {
       setMessage("ຕ້ອງລະບຸລະຫັດຕອນດິນ ແລະ ຊື່ຜູ້ໃຊ້");
       return false;
     }
@@ -111,7 +129,7 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
       page: currentPage,
       doctype: docType,
       rotate: rotation,
-      user_name: userName
+      user_name: user.user_name
     };
 
     // Update or add the page
@@ -137,7 +155,7 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
   };
 
   const handleSubmit = async () => {
-    if (!parcelId || !userName) {
+    if (!parcelId || !user) {
       setMessage("ຕ້ອງລະບຸລະຫັດຕອນດິນ ແລະ ຊື່ຜູ້ໃຊ້");
       return;
     }
@@ -162,9 +180,9 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
       setMessage("ບັນທຶກຂໍ້ມູນສຳເລັດ");
       
       // Redirect to land management page after success
-      // setTimeout(() => {
-      //   router.push('/land-management');
-      // }, 2000);
+      setTimeout(() => {
+        router.push(`/land-management?parcel=${parcelId}`);
+      }, 2000);
       
     } catch (error) {
       console.error("Error updating document types:", error);
@@ -242,16 +260,11 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
               />
             </div>
             
-            <div className="mb-4">
-              {/* <label className="block text-sm font-medium mb-2">ຊື່ຜູ້ໃຊ້</label> */}
-              <input
-                type="hidden"
-                value={userName}
-                // onChange={(e) => setUserName(e.target.value)}
-                // className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                // required
-              />
-            </div>
+            {user && (
+              <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                ຜູ້ໃຊ້: {user.user_name}
+              </div>
+            )}
             
             <div className="mb-4">
               {/* <label className="block text-sm font-medium mb-2">ໜ້າ</label> */}
@@ -284,18 +297,18 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
                 </div>
               ) : documentTypes && Object.keys(groupedDocTypes).length > 0 ? (
                 <select
-                  value={currentPageSaved?.doctype || ""}
+                  value={docType}
                   onChange={(e) => {
-                    const newDocType = parseInt(e.target.value);
+                    const newDocType = e.target.value;
                     setDocType(newDocType);
                     // Auto-save when document type changes
-                    if (parcelId && userName) {
+                    if (parcelId && user) {
                       const pageData: DocTypeRequest = {
                         parcel: parcelId,
                         page: currentPage,
                         doctype: newDocType,
                         rotate: rotation,
-                        user_name: userName
+                        user_name: user.user_name
                       };
                       
                       // Update or add the page
@@ -338,20 +351,19 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
             <div className="mb-6">
               <label className="block text-sm font-medium mb-2">ການໝູນເອກະສານ</label>
               <select
-                value={currentPageSaved?.rotate || 0}
+                value={rotation}
                 onChange={(e) => {
                   const angle = parseInt(e.target.value);
-                  setRotation(angle);
                   setRotationImperative(angle);
                   
                   // Auto-save when rotation changes
-                  if (parcelId && userName && currentPageSaved) {
+                  if (parcelId && user && currentPageSaved) {
                     const pageData: DocTypeRequest = {
                       parcel: parcelId,
                       page: currentPage,
                       doctype: docType,
                       rotate: angle,
-                      user_name: userName
+                      user_name: user.user_name
                     };
                     
                     // Update or add the page
@@ -365,8 +377,6 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
                       // Add new page
                       setSavedPages([...savedPages, pageData]);
                     }
-                    
-                    setMessage(`ບັນທຶກຂໍ້ມູນຂອງໜ້າທີ່ ${currentPage} ສຳເລັດ`);
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -390,7 +400,7 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
                 }`}
                 title={savedPages.length < pdfPages ? `ຍັງເຫຼືອ ${pdfPages - savedPages.length} ໜ້າທີ່ຍັງບໍ່ໄດ້ບັນທຶກ` : ""}
               >
-                {isSaving ? "ກຳລັງບັນທຶກ..." : "ບັນທຶກທັງໝົດ ແລະ ກັບໄປໜ້າຫຼັກ"}
+                {isSaving ? "ກຳລັງບັນທຶກ..." : "ບັນທຶກທັງໝົດ"}
               </button>
             </div>
             
@@ -407,7 +417,7 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
                       <span>ໜ້າ {page.page}</span>
                       <span>
                         {documentTypes
-                          ? documentTypes.find(opt => opt.value === page.doctype)?.label || `ປະເພດ ${page.doctype}`
+                          ? documentTypes.find(opt => opt.value === parseInt(page.doctype))?.label || `ປະເພດ ${page.doctype}`
                           : `ປະເພດ ${page.doctype}`}
                       </span>
                     </div>
@@ -428,12 +438,6 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
           <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md w-full max-w-md">
             <h1 className="text-2xl font-bold mb-4 text-center">ອັບເດດປະເພດເອກະສານ</h1>
             <p className="text-red-500 text-center">{message || "ກຳລັງໂຫຼດເອກະສານ..."}</p>
-            <button
-              onClick={() => router.push('/land-management')}
-              className="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              ໄປທີ່ໜ້າຈັດການຂໍ້ມູນທີ່ດິນ
-            </button>
           </div>
         </div>
       )}

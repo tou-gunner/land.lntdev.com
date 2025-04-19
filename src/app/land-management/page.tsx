@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import LandForm from "../components/LandForm";
 import OwnerForm from "../components/OwnerForm";
 import OwnerAndRightForm from '../components/OwnerAndRightForm';
 import { FormProvider, useFormContext } from "../contexts/FormContext";
 import SplitViewPdfViewer from '../components/SplitViewPdfViewer';
+import { getCurrentUser } from "../lib/auth";
 
 // Main content component that uses the form context
 function LandManagementContent() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'land' | 'ownership'>('land');
   const searchParams = useSearchParams();
   const parcelParam = searchParams.get('parcel');
@@ -17,13 +19,25 @@ function LandManagementContent() {
   const { updateFormData, formData } = useFormContext();
   const [splitLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+  const [message, setMessage] = useState<string>("");
+  
+  // Get the user from storage using useMemo
+  const user = useMemo(() => getCurrentUser(), []);
+  
+  // Redirect if no user found
+  useEffect(() => {
+    if (!user) {
+      setMessage("ກະລຸນາເຂົ້າສູ່ລະບົບກ່ອນ");
+      router.push('/login');
+    }
+  }, [router, user]);
   
   // Check for parcel parameter and set it as initial active tab if present
   useEffect(() => {
     if (parcelParam) {
       setPdfUrl(`${apiBaseUrl}/parcel/pdf?parcel=${parcelParam}`);
     }
-  }, [parcelParam, updateFormData]);
+  }, [parcelParam, updateFormData, apiBaseUrl]);
   
   // Add logging when tab changes to verify state persistence
   const handleTabChange = (tab: 'land' | 'ownership') => {
@@ -36,6 +50,7 @@ function LandManagementContent() {
       {pdfUrl ? (
         <SplitViewPdfViewer
           pdfUrl={pdfUrl}
+          useBuiltinPdfReader={true}
           defaultLayout={splitLayout}
           height="700px"
         >
@@ -78,8 +93,14 @@ function LandManagementContent() {
         <>
           <div className="flex justify-center items-center p-10">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-lg text-gray-600 dark:text-gray-300">ກະລຸນາເລືອກແປງທີ່ດິນເພື່ອສະແດງຂໍ້ມູນ</p>
+              {message ? (
+                <p className="text-lg text-red-600 dark:text-red-300">{message}</p>
+              ) : (
+                <>
+                  <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-lg text-gray-600 dark:text-gray-300">ກະລຸນາເລືອກແປງທີ່ດິນເພື່ອສະແດງຂໍ້ມູນ</p>
+                </>
+              )}
             </div>
           </div>
         </>

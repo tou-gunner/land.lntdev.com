@@ -218,7 +218,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
 
   // For brevity, we'll just show the form structure and reference the first few fields
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white dark:bg-gray-800 shadow-md rounded-lg border-2 border-gray-300 dark:border-gray-600">
+    <div className="max-w-4xl mx-auto p-6 bg-white dark:bg-gray-800 shadow-md border-2 border-gray-300 dark:border-gray-600">
       <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">ຟອມຂໍ້ມູນຕອນດິນ</h2>
       
       {/* Search Section */}

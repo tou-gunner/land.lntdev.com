@@ -63,20 +63,25 @@ const PdfViewer2 = forwardRef<PdfViewer2Ref, PdfViewer2Props>(({
       changePage(-1);
     },
     goToPage: (page: number) => {
-      if (page >= 1 && page <= numPages) {
+      if (page >= 1 && page <= numPages && page !== pageNumber) {
         setPageNumber(page);
       }
     },
     rotateClockwise: () => {
       const newRotation = (rotation + 90) % 360;
-      setRotation(newRotation);
+      if (rotation !== newRotation) {
+        setRotation(newRotation);
+      }
     },
     rotateCounterClockwise: () => {
       const newRotation = (rotation - 90 + 360) % 360;
       setRotation(newRotation);
     },
     setRotation: (angle: number) => {
-      setRotation(angle % 360);
+      const newRotation = angle % 360;
+      if (rotation !== newRotation) {
+        setRotation(newRotation);
+      }
     },
     zoomIn: () => {
       setScale(prevScale => Math.min(prevScale + 0.2, 3));

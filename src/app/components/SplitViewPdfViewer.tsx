@@ -15,6 +15,7 @@ interface SplitViewPdfViewerProps {
   onPageChange?: (pageNumber: number) => void;
   onRotationChange?: (rotation: number) => void;
   onLoadSuccess?: (pdf: { numPages: number }) => void;
+  useBuiltinPdfReader?: boolean;
 }
 
 export interface SplitViewPdfViewerRef {
@@ -39,7 +40,8 @@ const SplitViewPdfViewer = forwardRef<SplitViewPdfViewerRef, SplitViewPdfViewerP
   initialRotation = 0,
   onPageChange,
   onRotationChange,
-  onLoadSuccess
+  onLoadSuccess,
+  useBuiltinPdfReader = false
 }, ref) => {
   const { theme } = useTheme();
   const [layout, setLayout] = useState<'horizontal' | 'vertical'>(defaultLayout);
@@ -186,17 +188,25 @@ const SplitViewPdfViewer = forwardRef<SplitViewPdfViewerRef, SplitViewPdfViewerP
             [layout === 'horizontal' ? 'width' : 'height']: `${ratio * 100}%` 
           }}
         >
-          <PdfViewer2
-            ref={pdfViewerRef}
-            pdfUrl={pdfUrl}
-            height="100%"
-            showControls={true}
-            initialPage={initialPage}
-            initialRotation={initialRotation}
-            onPageChange={onPageChange}
-            onRotationChange={onRotationChange}
-            onLoadSuccess={onLoadSuccess}
-          />
+          {useBuiltinPdfReader ? (
+            <iframe
+              src={pdfUrl}
+              className="w-full h-full border-0"
+              title="PDF Document"
+            />
+          ) : (
+            <PdfViewer2
+              ref={pdfViewerRef}
+              pdfUrl={pdfUrl}
+              height="100%"
+              showControls={true}
+              initialPage={initialPage}
+              initialRotation={initialRotation}
+              onPageChange={onPageChange}
+              onRotationChange={onRotationChange}
+              onLoadSuccess={onLoadSuccess}
+            />
+          )}
         </div>
 
         {/* Resizer handle */}
