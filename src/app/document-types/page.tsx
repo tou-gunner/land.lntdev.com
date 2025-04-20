@@ -1,21 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SplitViewPdfViewer, { SplitViewPdfViewerRef } from "../components/SplitViewPdfViewer";
 import { DocTypeRequest, updateDocumentTypes } from "../lib/api";
 import { useGetDocumentTypesQuery } from "../redux/api/apiSlice";
 import { getCurrentUser } from "../lib/auth";
+import { withAuth } from "../components/AuthProvider";
 
-interface DocumentTypeUpdateProps {
-  parcelId?: string;
-}
-
-export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentTypeUpdateProps) {
+// Main component that uses searchParams
+function DocumentTypeUpdateContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const parcelIdFromUrl = searchParams.get("parcel");
-  const parcelId = propParcelId || parcelIdFromUrl;
+  const parcelId = parcelIdFromUrl;
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
   
   // Get the user from storage using useMemo
@@ -34,14 +32,6 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
 
   // Fetch document types from API
   const { data: documentTypes, isLoading: isLoadingDocTypes, error: docTypesError } = useGetDocumentTypesQuery();
-
-  // Redirect if no user found
-  useEffect(() => {
-    if (!user) {
-      setMessage("ກະລຸນາເຂົ້າສູ່ລະບົບກ່ອນ");
-      router.push('/login');
-    }
-  }, [router, user]);
 
   useEffect(() => {
     if (!parcelId) {
@@ -265,6 +255,35 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
                 ຜູ້ໃຊ້: {user.user_name}
               </div>
             )}
+
+            {/* All Pages Grid */}
+            <div className="mt-6">
+              <p className="text-sm font-medium mb-2">ໜ້າທັງໝົດ: {pdfPages} ໜ້າ</p>
+              {pdfPages > 0 && (
+                <div className="mt-2 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 max-h-60 overflow-y-auto">
+                  <div className="grid grid-cols-5 gap-2">
+                    {Array.from({ length: pdfPages }, (_, i) => i + 1).map(page => {
+                      const isSaved = savedPages.some(savedPage => savedPage.page === page);
+                      return (
+                        <div 
+                          key={page} 
+                          className={`
+                            text-center py-1 cursor-pointer rounded-md text-xs flex items-center justify-center
+                            ${page === currentPage ? 'ring-2 ring-blue-500' : ''}
+                            ${isSaved 
+                              ? 'bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700 text-green-800 dark:text-green-100' 
+                              : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-500'}
+                          `}
+                          onClick={() => pdfViewerRef.current?.goToPage(page)}
+                        >
+                          {page}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
             
             <div className="mb-4">
               {/* <label className="block text-sm font-medium mb-2">ໜ້າ</label> */}
@@ -443,4 +462,16 @@ export default function DocumentTypeUpdate({ parcelId: propParcelId }: DocumentT
       )}
     </div>
   );
-} 
+}
+
+// Wrapper component with Suspense boundary
+function DocumentTypeUpdate() {
+  return (
+    <Suspense fallback={<div className="flex justify-center p-8">Loading...</div>}>
+      <DocumentTypeUpdateContent />
+    </Suspense>
+  );
+}
+
+// Export the component wrapped with the AuthProvider's withAuth HOC
+export default withAuth(DocumentTypeUpdate); 

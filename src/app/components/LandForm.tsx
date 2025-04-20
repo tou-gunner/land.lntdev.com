@@ -182,9 +182,32 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
     try {
       // Format the data for submission
       const formattedData = {
-        ...formData,
-        landusetype: formData.landusetype ? Number(formData.landusetype) : null,
-        landvaluezone_number: formData.landvaluezone_number ? Number(formData.landvaluezone_number) : null
+        "parcelno": formData.parcelno,
+        "cadastremapno": formData.cadastremapno,
+        "landusetype": formData.landusetype ? parseInt(formData.landusetype) : null,
+        "landusezone": landZones.find(zone => zone.id === formData.landusezone)?.name || null,
+        "road": roadTypes.find(type => type.id === formData.roadtype)?.name || null,
+        "unit": formData.unit ? formData.unit : null,
+        "village": villages.find(village => village.id === formData.village)?.name || null,
+        "district": districts.find(district => district.id === formData.district)?.name || null,
+        "province": provinces.find(province => province.id === formData.province)?.name || null,
+        "purpose": formData.purpose ? formData.purpose : null,
+        "additionalstatements": formData.additionalstatements ? formData.additionalstatements : "LLMS-private ID: 0102000014759 ",
+        "status": formData.status,
+        "area": formData.area,
+        "villagecode": formData.villagecode ? formData.villagecode : null,
+        "isstate": formData.isstate,
+        "owner_check": formData.owner_check ? formData.owner_check : null,
+        "cadastremapno_old": formData.cadastremapno_old ? formData.cadastremapno_old : null,
+        "gid": formData.gid,
+        "urbanizationlevel": formData.urbanizationlevel ? formData.urbanizationlevel : null,
+        "landvaluezone_number": formData.landvaluezone_number ? formData.landvaluezone_number : null,
+        "roadtype": formData.roadtype ? formData.roadtype : null,
+        "parcelno_old": formData.parcelno_old ? formData.parcelno_old : null,
+        "barcode": formData.barcode ? formData.barcode : null,
+        "exists_llr": formData.exists_llr,
+        "snd_parcel2_llr": formData.snd_parcel2_llr,
+        "concat_pages": formData.concat_pages
       };
       
       // Send data to API
@@ -486,6 +509,21 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
               id="area"
               name="area"
               value={formData.area}
+              onChange={handleChange}
+              className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          
+          {/* Owner */}
+          <div className="form-group">
+            <label htmlFor="owner_check" className="block mb-2 font-semibold text-black dark:text-white">
+              ຊື່ເຈົ້າຂອງຕອນດິນ:
+            </label>
+            <input
+              type="text"
+              id="owner_check"
+              name="owner_check"
+              value={formData.owner_check}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />

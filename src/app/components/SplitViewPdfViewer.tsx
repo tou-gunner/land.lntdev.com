@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, ReactNode, useRef, useImperativeHandle, forwardRef } from 'react';
-import PdfViewer2, { PdfViewer2Ref } from './PdfViewer2';
+import PdfViewer, { PdfViewerRef } from './PdfViewer';
 import { useTheme } from './ThemeProvider';
 
 interface SplitViewPdfViewerProps {
@@ -48,7 +48,7 @@ const SplitViewPdfViewer = forwardRef<SplitViewPdfViewerRef, SplitViewPdfViewerP
   const [ratio, setRatio] = useState(defaultRatio);
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState(0);
-  const pdfViewerRef = useRef<PdfViewer2Ref>(null);
+  const pdfViewerRef = useRef<PdfViewerRef>(null);
 
   // Expose imperative methods
   useImperativeHandle(ref, () => ({
@@ -85,6 +85,10 @@ const SplitViewPdfViewer = forwardRef<SplitViewPdfViewerRef, SplitViewPdfViewerP
   const handleDragStart = (e: React.MouseEvent) => {
     setIsDragging(true);
     setStartPos(layout === 'horizontal' ? e.clientX : e.clientY);
+    // Disable pointer events on iframe while dragging
+    if (pdfViewerRef.current?.iframeRef?.current) {
+      pdfViewerRef.current.iframeRef.current.style.pointerEvents = 'none';
+    }
     e.preventDefault();
   };
 
@@ -107,6 +111,10 @@ const SplitViewPdfViewer = forwardRef<SplitViewPdfViewerRef, SplitViewPdfViewerP
   // Stop dragging
   const handleDragEnd = () => {
     setIsDragging(false);
+    // Re-enable pointer events on iframe
+    if (pdfViewerRef.current?.iframeRef?.current) {
+      pdfViewerRef.current.iframeRef.current.style.pointerEvents = 'auto';
+    }
   };
 
   // Toggle between horizontal and vertical layouts
@@ -188,25 +196,18 @@ const SplitViewPdfViewer = forwardRef<SplitViewPdfViewerRef, SplitViewPdfViewerP
             [layout === 'horizontal' ? 'width' : 'height']: `${ratio * 100}%` 
           }}
         >
-          {useBuiltinPdfReader ? (
-            <iframe
-              src={pdfUrl}
-              className="w-full h-full border-0"
-              title="PDF Document"
-            />
-          ) : (
-            <PdfViewer2
-              ref={pdfViewerRef}
-              pdfUrl={pdfUrl}
-              height="100%"
-              showControls={true}
-              initialPage={initialPage}
-              initialRotation={initialRotation}
-              onPageChange={onPageChange}
-              onRotationChange={onRotationChange}
-              onLoadSuccess={onLoadSuccess}
-            />
-          )}
+          <PdfViewer
+            ref={pdfViewerRef}
+            pdfUrl={pdfUrl}
+            height="100%"
+            showControls={true}
+            initialPage={initialPage}
+            initialRotation={initialRotation}
+            onPageChange={onPageChange}
+            onRotationChange={onRotationChange}
+            onLoadSuccess={onLoadSuccess}
+            useBuiltinPdfReader={useBuiltinPdfReader}
+          />
         </div>
 
         {/* Resizer handle */}

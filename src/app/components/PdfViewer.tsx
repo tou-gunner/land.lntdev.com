@@ -1,343 +1,350 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import dynamic from 'next/dynamic';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { Document, Page } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+import { useTheme } from './ThemeProvider';
 
-// Import PDF.js worker as recommended in official documentation
-// This needs to be done once before using react-pdf components
+// Import styles for PDF viewer
 import { pdfjs } from 'react-pdf';
-
-// Use an older, more compatible version of PDF.js worker (2.4.456)
-// that doesn't require Promise.withResolvers
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.worker.min.js`;
-
-// Dynamically import react-pdf components with fallback UI
-const Document = dynamic(
-  () => import('react-pdf').then(mod => mod.Document),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="flex justify-center items-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    )
-  }
-);
-
-const Page = dynamic(
-  () => import('react-pdf').then(mod => mod.Page),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    )
-  }
-);
+pdfjs.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
 interface PdfViewerProps {
   pdfUrl: string;
+  height?: string;
+  showControls?: boolean;
+  onPageChange?: (pageNumber: number) => void;
   initialPage?: number;
   initialRotation?: number;
-  onPageChange?: (pageNumber: number) => void;
   onRotationChange?: (rotation: number) => void;
-  height?: number | string;
-  showControls?: boolean;
-  className?: string;
+  onLoadSuccess?: (pdf: { numPages: number }) => void;
+  useBuiltinPdfReader?: boolean;
 }
 
-const PdfViewer = ({
-  pdfUrl,
+export interface PdfViewerRef {
+  nextPage: () => void;
+  previousPage: () => void;
+  goToPage: (page: number) => void;
+  rotateClockwise: () => void;
+  rotateCounterClockwise: () => void;
+  setRotation: (angle: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetZoom: () => void;
+  iframeRef?: React.RefObject<HTMLIFrameElement | null>;
+}
+
+const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(({ 
+  pdfUrl, 
+  height = '500px', 
+  showControls = true, 
+  onPageChange,
   initialPage = 1,
   initialRotation = 0,
-  onPageChange,
   onRotationChange,
-  height = "calc(100vh-300px)",
-  showControls = true,
-  className = ""
-}: PdfViewerProps) => {
+  onLoadSuccess,
+  useBuiltinPdfReader = false
+}, ref) => {
+  const { theme } = useTheme();
   const [numPages, setNumPages] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState<number>(initialPage);
-  const [rotation, setRotation] = useState<number>(initialRotation);
-  const [scale, setScale] = useState<number>(1.0);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+  const [pageNumber, setPageNumber] = useState<number>(initialPage);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const [pageWidth, setPageWidth] = useState<number>(0);
+  const [scale, setScale] = useState<number>(1.0);
+  const [rotation, setRotation] = useState<number>(initialRotation);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Expose imperative methods
+  useImperativeHandle(ref, () => ({
+    nextPage: () => {
+      changePage(1);
+    },
+    previousPage: () => {
+      changePage(-1);
+    },
+    goToPage: (page: number) => {
+      if (page >= 1 && page <= numPages && page !== pageNumber) {
+        setPageNumber(page);
+      }
+    },
+    rotateClockwise: () => {
+      const newRotation = (rotation + 90) % 360;
+      if (rotation !== newRotation) {
+        setRotation(newRotation);
+      }
+    },
+    rotateCounterClockwise: () => {
+      const newRotation = (rotation - 90 + 360) % 360;
+      setRotation(newRotation);
+    },
+    setRotation: (angle: number) => {
+      const newRotation = angle % 360;
+      if (rotation !== newRotation) {
+        setRotation(newRotation);
+      }
+    },
+    zoomIn: () => {
+      setScale(prevScale => Math.min(prevScale + 0.2, 3));
+    },
+    zoomOut: () => {
+      setScale(prevScale => Math.max(prevScale - 0.2, 0.5));
+    },
+    resetZoom: () => {
+      setScale(1.0);
+    },
+    iframeRef
+  }));
+
+  // Update page width based on container size
   useEffect(() => {
-    // Set initial page from props
-    setCurrentPage(initialPage);
+    const updatePageWidth = () => {
+      if (containerRef.current) {
+        // Set page width to container width minus padding
+        const containerWidth = containerRef.current.clientWidth - 20;
+        setPageWidth(containerWidth);
+      }
+    };
+
+    // Initial update
+    updatePageWidth();
+    
+    // Update on window resize
+    window.addEventListener('resize', updatePageWidth);
+    
+    // Small delay to ensure container is fully rendered
+    const timeoutId = setTimeout(updatePageWidth, 100);
+    
+    return () => {
+      window.removeEventListener('resize', updatePageWidth);
+      clearTimeout(timeoutId);
+    };
+  }, []);
+
+  // Effect to sync with initialPage if it changes
+  useEffect(() => {
+    setPageNumber(initialPage);
   }, [initialPage]);
 
+  // Effect to sync with initialRotation if it changes
   useEffect(() => {
-    // Set initial rotation from props
     setRotation(initialRotation);
   }, [initialRotation]);
 
-  // Reset position when scale or page changes
-  useEffect(() => {
-    setPosition({ x: 0, y: 0 });
-  }, [scale, currentPage, rotation]);
-
-  const handleDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
+    setPageNumber(initialPage);
     setLoading(false);
-  };
-
-  const handleDocumentLoadError = (error: Error) => {
-    console.error("Error loading PDF:", error);
-    setError("ບໍ່ສາມາດໂຫຼດ PDF ໄດ້");
-    setLoading(false);
-  };
-
-  const navigatePage = (direction: number) => {
-    const newPage = currentPage + direction;
-    if (newPage >= 1 && newPage <= numPages) {
-      setCurrentPage(newPage);
-      onPageChange?.(newPage);
-    }
-  };
-
-  const handlePageNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const pageNumber = parseInt(e.target.value) || 1;
-    const validatedPageNumber = Math.min(Math.max(1, pageNumber), numPages);
-    setCurrentPage(validatedPageNumber);
-    onPageChange?.(validatedPageNumber);
-  };
-
-  const handleRotationChange = (newRotation: number) => {
-    // Ensure rotation is always 0, 90, 180, or 270
-    const validRotation = newRotation % 360;
-    setRotation(validRotation);
-    onRotationChange?.(validRotation);
-  };
-
-  const handleRotateLeft = () => {
-    handleRotationChange((rotation + 270) % 360);
-  };
-
-  const handleRotateRight = () => {
-    handleRotationChange((rotation + 90) % 360);
-  };
-
-  const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3));
-  };
-
-  const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (scale > 1) {
-      setIsDragging(true);
-      setStartPosition({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
     
-    const newX = e.clientX - startPosition.x;
-    const newY = e.clientY - startPosition.y;
-    
-    setPosition({ x: newX, y: newY });
-  };
+    // Update width after document loads
+    if (containerRef.current) {
+      const containerWidth = containerRef.current.clientWidth - 20;
+      setPageWidth(containerWidth);
+    }
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+    // Call onLoadSuccess callback if provided
+    if (onLoadSuccess) {
+      onLoadSuccess({ numPages });
+    }
+  }
 
-  const handleMouseLeave = () => {
-    setIsDragging(false);
-  };
+  // Effect to notify parent about page changes
+  useEffect(() => {
+    if (numPages > 0 && !loading && onPageChange) {
+      onPageChange(pageNumber);
+    }
+  }, [numPages, pageNumber, loading, onPageChange]);
 
-  const zoomOptions = [
-    { value: 0.5, label: "50%" },
-    { value: 0.75, label: "75%" },
-    { value: 1, label: "100%" },
-    { value: 1.25, label: "125%" },
-    { value: 1.5, label: "150%" },
-    { value: 2, label: "200%" }
-  ];
+  // Effect to notify parent about rotation changes
+  useEffect(() => {
+    if (onRotationChange) {
+      onRotationChange(rotation);
+    }
+  }, [rotation, onRotationChange]);
+
+  function changePage(offset: number) {
+    setPageNumber(prevPageNumber => {
+      const newPageNumber = prevPageNumber + offset;
+      if (newPageNumber >= 1 && newPageNumber <= numPages) {
+        return newPageNumber;
+      }
+      return prevPageNumber;
+    });
+  }
+
+  function previousPage() {
+    changePage(-1);
+  }
+
+  function nextPage() {
+    changePage(1);
+  }
+
+  function zoomIn() {
+    setScale(prevScale => Math.min(prevScale + 0.2, 3));
+  }
+
+  function zoomOut() {
+    setScale(prevScale => Math.max(prevScale - 0.2, 0.5));
+  }
+
+  function resetZoom() {
+    setScale(1.0);
+  }
+
+  function rotateClockwise() {
+    setRotation(prevRotation => {
+      const newRotation = (prevRotation + 90) % 360;
+      return newRotation;
+    });
+  }
+
+  function rotateCounterClockwise() {
+    setRotation(prevRotation => {
+      const newRotation = (prevRotation - 90 + 360) % 360;
+      return newRotation;
+    });
+  }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md ${className}`}>
-      {showControls && (
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">ເບິ່ງ PDF - ໜ້າ {currentPage}</h2>
-          <div className="flex items-center space-x-2">
-            {/* Zoom controls */}
-            <button 
-              onClick={handleZoomOut}
-              disabled={scale <= 0.5}
-              className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+    <div ref={containerRef} className="flex flex-col h-full bg-white dark:bg-gray-900" style={{ height }}>
+      {showControls && numPages > 0 && !useBuiltinPdfReader && (
+        <div className="sticky top-0 z-10 flex justify-center items-center gap-2 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+          <div className="flex justify-center items-center gap-3">
+            <button
+              disabled={pageNumber <= 1}
+              onClick={previousPage}
+              className="px-2 py-1 rounded bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+              ຫນ້າກ່ອນ
+            </button>
+            
+            <span className="text-gray-800 dark:text-gray-200">
+              ຫນ້າ {pageNumber} ຂອງ {numPages}
+            </span>
+            
+            <button
+              disabled={pageNumber >= numPages}
+              onClick={nextPage}
+              className="px-2 py-1 rounded bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 disabled:opacity-50 hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+              ຫນ້າຕໍ່ໄປ
+            </button>
+          </div>
+          
+          <div className="flex justify-center items-center gap-2">
+            <button
+              onClick={zoomOut}
+              className="px-2 py-1 rounded bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
               title="ຂະຫຍາຍອອກ"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/>
               </svg>
             </button>
-            <select
-              value={scale}
-              onChange={(e) => setScale(parseFloat(e.target.value))}
-              className="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+            
+            <button
+              onClick={resetZoom}
+              className="px-2 py-1 rounded bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+              title="ຄືນຄ່າຂະຫຍາຍ"
             >
-              {zoomOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <button 
-              onClick={handleZoomIn}
-              disabled={scale >= 3}
-              className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+              {Math.round(scale * 100)}%
+            </button>
+            
+            <button
+              onClick={zoomIn}
+              className="px-2 py-1 rounded bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
               title="ຂະຫຍາຍເຂົ້າ"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+              </svg>
+            </button>
+
+            <button
+              onClick={rotateCounterClockwise}
+              className="px-2 py-1 rounded bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+              title="ໝູນຊ້າຍ"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fillRule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2v1z"/>
+                <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466z"/>
               </svg>
             </button>
             
-            {/* Separator */}
-            <div className="h-6 border-l border-gray-300 dark:border-gray-600 mx-1"></div>
-            
-            {/* Rotation controls */}
-            <button 
-              onClick={handleRotateLeft}
-              className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300"
-              title="ໝູນໄປຊ້າຍ"
+            <button
+              onClick={rotateClockwise}
+              className="px-2 py-1 rounded bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+              title="ໝູນຂວາ"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-              </svg>
-            </button>
-            <div className="px-2 min-w-[50px] text-center font-medium">
-              {rotation === 0 ? (
-                <span>0°</span>
-              ) : rotation === 90 ? (
-                <span className="text-green-600 dark:text-green-400">90°</span>
-              ) : rotation === 180 ? (
-                <span className="text-blue-600 dark:text-blue-400">180°</span>
-              ) : (
-                <span className="text-purple-600 dark:text-purple-400">270°</span>
-              )}
-            </div>
-            <button 
-              onClick={handleRotateRight}
-              className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300"
-              title="ໝູນໄປຂວາ"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fillRule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
               </svg>
             </button>
           </div>
         </div>
       )}
-
-      {showControls && (
-        <div className="mb-4 flex items-center">
-          <button
-            onClick={() => navigatePage(-1)}
-            disabled={currentPage <= 1}
-            className="px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-l-md hover:bg-gray-300 disabled:opacity-50"
-          >
-            &larr;
-          </button>
-          <input
-            type="number"
-            value={currentPage}
-            onChange={handlePageNumberChange}
-            className="w-20 text-center px-3 py-2 border-y border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            min="1"
-            max={numPages}
-          />
-          <button
-            onClick={() => navigatePage(1)}
-            disabled={currentPage >= numPages}
-            className="px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-r-md hover:bg-gray-300 disabled:opacity-50"
-          >
-            &rarr;
-          </button>
-          <span className="ml-2 text-sm text-gray-500">ຈາກທັງໝົດ {numPages} ໜ້າ</span>
-        </div>
-      )}
-
-      <div 
-        className={`w-full overflow-hidden ${typeof height === 'string' ? 'h-[' + height + ']' : `h-[${height}px]`}`}
-        ref={pdfContainerRef}
-      >
-        {loading && !error && (
-          <div className="flex justify-center items-center h-full">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto">
+        {loading && !useBuiltinPdfReader && (
+          <div className="flex justify-center items-center py-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
         )}
         
-        {error && (
-          <div className="flex justify-center items-center h-full bg-red-50 text-red-500 p-4 rounded">
-            <p>{error}</p>
+        {error && !useBuiltinPdfReader && (
+          <div className="text-red-500 text-center py-5">
+            ບໍ່ສາມາດໂຫຼດ PDF ໄດ້: {error.message}
           </div>
         )}
-        
-        {!error && (
-          <div
+
+        {useBuiltinPdfReader ? (
+          <iframe
+            ref={iframeRef}
+            src={`${pdfUrl}#toolbar=0&navpanes=0&view=FitH`}
+            className="w-full h-full border-0"
+            title="PDF Document"
             style={{ 
-              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-              transformOrigin: '0 0',
-              cursor: isDragging ? 'grabbing' : scale > 1 ? 'grab' : 'default'
+              userSelect: 'none'
             }}
-            className="transition-transform duration-100 ease-out"
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-          >
+          />
+        ) : (
+          <div className="flex-1 flex justify-center px-2 py-4">
             <Document
               file={pdfUrl}
-              onLoadSuccess={handleDocumentLoadSuccess}
-              onLoadError={handleDocumentLoadError}
-              loading={
-                <div className="flex justify-center items-center h-full">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
-              }
-              error={
-                <div className="flex justify-center items-center h-full bg-red-50 text-red-500 p-4 rounded">
-                  <p>ບໍ່ສາມາດໂຫຼດ PDF ໄດ້</p>
-                </div>
-              }
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={(err) => {
+                setError(err);
+                setLoading(false);
+              }}
+              loading={null}
+              className="pdf-document"
             >
-              <Page 
-                pageNumber={currentPage} 
-                width={undefined}
-                height={undefined}
-                scale={1} // We handle scaling at the container level
-                rotate={rotation}
-                renderAnnotationLayer={true}
-                renderTextLayer={true}
-                loading={
-                  <div className="flex justify-center items-center h-32">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                  </div>
-                }
-              />
+              {pageWidth > 0 && (
+                <Page 
+                  pageNumber={pageNumber} 
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                  className={`${theme === 'dark' ? 'invert filter brightness-90 contrast-95' : ''}`}
+                  loading={null}
+                  scale={scale}
+                  width={pageWidth}
+                  canvasBackground={theme === 'dark' ? '#333' : 'transparent'}
+                  rotate={rotation}
+                />
+              )}
             </Document>
           </div>
         )}
       </div>
     </div>
   );
-};
+});
 
-export default PdfViewer; 
+PdfViewer.displayName = 'PdfViewer';
+
+export default PdfViewer;

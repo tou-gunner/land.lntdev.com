@@ -2,6 +2,72 @@
 
 import { createContext, useContext, useState, ReactNode, useCallback } from "react";
 
+interface Owner {
+  gid: string;
+  ownertype: 'person' | 'entity';
+  title?: string;
+  name?: string;
+  // Person specific fields
+  firstname?: string;
+  lastname?: string;
+  birthdate?: string;
+  nationality?: string;
+  occupation?: string;
+  idcardno?: string;
+  idcarddate?: string;
+  familybookno?: string;
+  fathername?: string;
+  mothername?: string;
+  spousename?: string;
+  spousebirthdate?: string;
+  spousefathername?: string;
+  spousemothername?: string;
+  spousenationality?: string;
+  spouseoccupation?: string;
+  // Entity specific fields
+  entitytype?: string;
+  registrationno?: string;
+  registrationdate?: string;
+  businesstype?: string;
+  companyname?: string;
+  // Common address fields
+  province?: string;
+  district?: string;
+  village?: string;
+  unit?: string;
+  road?: string;
+  houseno?: string;
+  government_workplace?: string;
+  isstate?: boolean;
+  updated?: string;
+}
+
+interface LandRight {
+  gid: string;
+  parcelid: string;
+  ownerid: string;
+  righttype?: string;
+  landregisterbookno?: string;
+  titlenumber?: string;
+  titleeditionno?: string;
+  landrightcategory?: string;
+  landregistersheetno?: string;
+  stateland?: boolean;
+  barcode?: string;
+  part?: string;
+  history?: string;
+  valid_from?: string;
+  valid_till?: string;
+  date_conclusion?: string;
+  date_title_printed?: string;
+  date_public_display?: string;
+  date_title_send_to_ponre?: string;
+  date_title_issued?: string;
+  updated?: string;
+  // Owner data
+  owner: Owner;
+}
+
 // Define the shape of our form data
 interface FormData {
   // Land data
@@ -15,6 +81,7 @@ interface FormData {
   landvaluezone_number?: string;
   roadtype?: number;
   isstate?: boolean;
+  owner_check?: string;
   purpose?: string;
   status?: number;
   area?: number;
@@ -29,69 +96,7 @@ interface FormData {
   barcode?: string;
   gid?: string;
   // Land rights array
-  landrights: Array<{
-    gid: string;
-    parcelid: string;
-    ownerid: string;
-    righttype?: string;
-    landregisterbookno?: string;
-    titlenumber?: string;
-    titleeditionno?: string;
-    landrightcategory?: string;
-    landregistersheetno?: string;
-    stateland?: boolean;
-    barcode?: string;
-    part?: string;
-    history?: string;
-    valid_from?: string;
-    valid_till?: string;
-    date_conclusion?: string;
-    date_title_printed?: string;
-    date_public_display?: string;
-    date_title_send_to_ponre?: string;
-    date_title_issued?: string;
-    updated?: string;
-    // Owner data
-    owner: {
-      gid: string;
-      ownertype: 'person' | 'entity';
-      title?: string;
-      name?: string;
-      // Person specific fields
-      firstname?: string;
-      lastname?: string;
-      birthdate?: string;
-      nationality?: string;
-      occupation?: string;
-      idcardno?: string;
-      idcarddate?: string;
-      familybookno?: string;
-      fathername?: string;
-      mothername?: string;
-      spousename?: string;
-      spousebirthdate?: string;
-      spousefathername?: string;
-      spousemothername?: string;
-      spousenationality?: string;
-      spouseoccupation?: string;
-      // Entity specific fields
-      entitytype?: string;
-      registrationno?: string;
-      registrationdate?: string;
-      businesstype?: string;
-      companyname?: string;
-      // Common address fields
-      province?: string;
-      district?: string;
-      village?: string;
-      unit?: string;
-      road?: string;
-      houseno?: string;
-      government_workplace?: string;
-      isstate?: boolean;
-      updated?: string;
-    };
-  }>;
+  landrights: Array<LandRight>;
   [key: string]: any;
 }
 
@@ -132,6 +137,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
     landvaluezone_number: "",
     roadtype: -1,
     isstate: false,
+    owner_check: "",
     purpose: "",
     status: -1,
     area: 0,
@@ -187,7 +193,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
   const [isGovernmentLand, setIsGovernmentLandState] = useState(false);
 
   // Handler for updating a specific land right
-  const updateLandRight = useCallback((index: number, landRightData: any) => {
+  const updateLandRight = useCallback((index: number, landRightData: LandRight) => {
     setFormData(prev => {
       const updatedLandRights = [...prev.landrights];
       
@@ -195,21 +201,26 @@ export function FormProvider({ children }: { children: ReactNode }) {
       const sanitizedData: any = {};
       
       // Process each field in the new data
-      Object.entries(landRightData).forEach(([key, value]) => {
-        if (value === null) {
-          // Handle null values based on field type
-          const currentValue = updatedLandRights[index][key];
-          if (typeof currentValue === 'number') {
-            sanitizedData[key] = 0;
-          } else if (typeof currentValue === 'boolean') {
-            sanitizedData[key] = false;
-          } else {
-            sanitizedData[key] = '';
+      for (const key in landRightData) {
+        if (Object.prototype.hasOwnProperty.call(landRightData, key)) {
+          // Ensure the key is actually a key of LandRight
+          if (key in updatedLandRights[index]) {
+            const currentKey = key as keyof LandRight;
+            const currentValue = updatedLandRights[index][currentKey];
+      
+            if (typeof currentValue === 'number') {
+              sanitizedData[currentKey] = 0;
+            } else if (typeof currentValue === 'boolean') {
+              sanitizedData[currentKey] = false;
+            } else {
+              sanitizedData[currentKey] = '';
+            }
           }
         } else {
-          sanitizedData[key] = value;
+          // Handle unknown keys if needed
+          sanitizedData[key as keyof LandRight] = landRightData[key as keyof LandRight];
         }
-      });
+      }
       
       updatedLandRights[index] = {
         ...updatedLandRights[index],

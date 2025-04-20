@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import LandForm from "../components/LandForm";
-import OwnerForm from "../components/OwnerForm";
 import OwnerAndRightForm from '../components/OwnerAndRightForm';
 import { FormProvider, useFormContext } from "../contexts/FormContext";
 import SplitViewPdfViewer from '../components/SplitViewPdfViewer';
 import { getCurrentUser } from "../lib/auth";
+import { withAuth } from "../components/AuthProvider";
 
 // Main content component that uses the form context
 function LandManagementContent() {
@@ -23,14 +23,6 @@ function LandManagementContent() {
   
   // Get the user from storage using useMemo
   const user = useMemo(() => getCurrentUser(), []);
-  
-  // Redirect if no user found
-  useEffect(() => {
-    if (!user) {
-      setMessage("ກະລຸນາເຂົ້າສູ່ລະບົບກ່ອນ");
-      router.push('/login');
-    }
-  }, [router, user]);
   
   // Check for parcel parameter and set it as initial active tab if present
   useEffect(() => {
@@ -109,8 +101,11 @@ function LandManagementContent() {
   );
 }
 
-// Wrapper component that provides the form context
-export default function LandManagementPage() {
+// Wrap the content component with withAuth
+const ProtectedLandManagementContent = withAuth(LandManagementContent);
+
+// Component that uses useSearchParams but with Suspense boundary
+function LandManagementWithSearchParams() {
   const searchParams = useSearchParams();
   const parcelParam = searchParams.get('parcel');
   
@@ -119,7 +114,16 @@ export default function LandManagementPage() {
   
   return (
     <FormProvider>
-      <LandManagementContent />
+      <ProtectedLandManagementContent />
     </FormProvider>
+  );
+}
+
+// Wrapper component with Suspense boundary
+export default function LandManagementPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center p-8">Loading...</div>}>
+      <LandManagementWithSearchParams />
+    </Suspense>
   );
 } 

@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { apiSlice } from "../redux/api/apiSlice";
 import { ReduxProvider } from "../redux/provider";
 import { getCurrentUser } from "../lib/auth";
+import { withAuth } from "../components/AuthProvider";
 
 interface Parcel {
   gid: string;
@@ -507,11 +508,14 @@ function DocumentsListContent() {
   );
 }
 
+// Wrap the content component with withAuth
+const ProtectedDocumentsListContent = withAuth(DocumentsListContent);
+
 // The main component wrapped with ReduxProvider
 export default function DocumentsList() {
   return (
     <ReduxProvider>
-      <DocumentsListContent />
+      <ProtectedDocumentsListContent />
     </ReduxProvider>
   );
 } 
