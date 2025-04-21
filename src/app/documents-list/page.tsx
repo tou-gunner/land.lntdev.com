@@ -149,7 +149,7 @@ function DocumentsListContent() {
       setParcels(transformedParcels);
       
       // Set total items to the length of filtered data
-      setTotalItems(filteredData.length);
+      setTotalItems(filteredData?.[0]?.total_pages || 0);
       
       // Function to trigger loading of all location data needed for the display
       const loadAllLocations = async (data: any) => {

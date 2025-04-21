@@ -171,7 +171,7 @@ function DocumentTypeUpdateContent() {
       
       // Redirect to land management page after success
       setTimeout(() => {
-        router.push(`/land-management?parcel=${parcelId}`);
+        router.push(`/document-forms?parcel=${parcelId}`);
       }, 2000);
       
     } catch (error) {

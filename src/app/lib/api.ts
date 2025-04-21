@@ -29,7 +29,7 @@ export interface DocTypeRequest {
   user_name: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = 'https://mcconsultancy.la:9092';
 
 // Helper function to transform API items to the format needed by dropdowns
 function transformApiItems(items: ApiItem[]): TransformedItem[] {

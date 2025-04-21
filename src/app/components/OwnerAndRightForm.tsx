@@ -106,7 +106,7 @@ export default function OwnerAndRightForm() {
                 <></>
                 // <PersonForm />
               ) : (
-                <EntityForm />
+                <EntityForm owner={landright.owner} />
               )}
             </div>
 

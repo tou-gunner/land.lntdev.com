@@ -10,26 +10,18 @@ import { getCurrentUser } from "../lib/auth";
 import { withAuth } from "../components/AuthProvider";
 
 // Main content component that uses the form context
-function LandManagementContent() {
+function DocumentFormsContent() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'land' | 'ownership'>('land');
   const searchParams = useSearchParams();
   const parcelParam = searchParams.get('parcel');
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const { updateFormData, formData } = useFormContext();
-  const [splitLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+  const pdfUrl = `${apiBaseUrl}/parcel/pdf?parcel=${parcelParam}`;
+  const [splitLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const [message, setMessage] = useState<string>("");
   
   // Get the user from storage using useMemo
   const user = useMemo(() => getCurrentUser(), []);
-  
-  // Check for parcel parameter and set it as initial active tab if present
-  useEffect(() => {
-    if (parcelParam) {
-      setPdfUrl(`${apiBaseUrl}/parcel/pdf?parcel=${parcelParam}`);
-    }
-  }, [parcelParam, updateFormData, apiBaseUrl]);
   
   // Add logging when tab changes to verify state persistence
   const handleTabChange = (tab: 'land' | 'ownership') => {
@@ -102,10 +94,10 @@ function LandManagementContent() {
 }
 
 // Wrap the content component with withAuth
-const ProtectedLandManagementContent = withAuth(LandManagementContent);
+const ProtectedDocumentFormsContent = withAuth(DocumentFormsContent);
 
 // Component that uses useSearchParams but with Suspense boundary
-function LandManagementWithSearchParams() {
+function DocumentFormsWithSearchParams() {
   const searchParams = useSearchParams();
   const parcelParam = searchParams.get('parcel');
   
@@ -114,16 +106,16 @@ function LandManagementWithSearchParams() {
   
   return (
     <FormProvider>
-      <ProtectedLandManagementContent />
+      <ProtectedDocumentFormsContent />
     </FormProvider>
   );
 }
 
 // Wrapper component with Suspense boundary
-export default function LandManagementPage() {
+export default function DocumentFormsPage() {
   return (
     <Suspense fallback={<div className="flex justify-center p-8">Loading...</div>}>
-      <LandManagementWithSearchParams />
+      <DocumentFormsWithSearchParams />
     </Suspense>
   );
 } 

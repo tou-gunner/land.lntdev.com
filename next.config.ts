@@ -2,11 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: 'standalone',
   async rewrites() {
+    // Use the environment variable for API URL, or fallback to default if not set
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://mcconsultancy.la:9092';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://mcconsultancy.la:9092/:path*',
+        destination: `${apiUrl}/:path*`,
       },
     ];
   },

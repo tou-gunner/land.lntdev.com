@@ -11,36 +11,21 @@ import {
   useGetTitlesQuery
 } from "../redux/api/apiSlice";
 import { useFormContext } from "../contexts/FormContext";
+import { Entity } from "../contexts/FormContext";
 
-interface ApiItem {
-  id: number | string;
-  name: string;
-  englishName?: string;
-}
+// Import the useSaveEntityMutation hook
+import { useSaveEntityMutation } from "../redux/api/apiSlice";
 
-interface Province {
-  provincecode: string;
-  province_english: string;
-  province_lao: string;
-}
+export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
+  // const { formData, updateFormData } = useFormContext();
+  const [owner, setOwner] = useState<Entity>(initialOwner);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-interface District {
-  districtcode: string;
-  district_english: string;
-  district_lao: string;
-}
+  // Create the saveEntity mutation hook
+  const [saveEntity, { isLoading }] = useSaveEntityMutation();
 
-interface Village {
-  provinceid: string;
-  provincename: string;
-  districtid: string;
-  districtname: string;
-  villageid: string;
-  villagename: string;
-}
-
-export default function EntityForm() {
-  const { formData, updateFormData } = useFormContext();
   // Use RTK Query hooks for data fetching
   const { data: entityTypes = [], isLoading: loadingEntityTypes } = useGetEntityTypesQuery();
   const { data: businessTypes = [], isLoading: loadingBusinessTypes } = useGetBusinessTypesQuery();
@@ -49,45 +34,102 @@ export default function EntityForm() {
   
    // Location data
    const { data: provinces = [], isLoading: provincesLoading } = useGetProvincesQuery();
-   const { data: districts = [], isLoading: districtsLoading } = useGetDistrictsQuery(formData.province, {
-     skip: !formData.province
+   const { data: districts = [], isLoading: districtsLoading } = useGetDistrictsQuery(owner.province, {
+     skip: !owner.province
    });
-   const { data: villages = [], isLoading: villagesLoading } = useGetVillagesQuery(formData.district, {
-     skip: !formData.district
+   const { data: villages = [], isLoading: villagesLoading } = useGetVillagesQuery(owner.district, {
+     skip: !owner.district
    });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     
-    const updatedFormData = { ...formData };
+    const updatedOwner = { ...owner };
     
     // Handle cascading selection for location fields
     if (name === "province") {
-      updatedFormData[name] = value;
-      updatedFormData["district"] = "";
-      updatedFormData["village"] = "";
+      updatedOwner[name] = value;
+      updatedOwner["district"] = "";
+      updatedOwner["village"] = "";
     } else if (name === "district") {
-      updatedFormData[name] = value;
-      updatedFormData["village"] = "";
+      updatedOwner[name] = value;
+      updatedOwner["village"] = "";
     } else if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
-      updatedFormData[name] = checked;
+      updatedOwner[name] = checked;
     } else {
-      updatedFormData[name] = value;
+      updatedOwner[name] = value;
     }
-    
+
     // Update the context
-    updateFormData(updatedFormData);
+    setOwner(updatedOwner);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    //TODO: Submit form data
+    
+    // Reset status
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+    
+    try {
+      // Format the entity data according to the API requirements
+      const entityData = {
+        name: owner.name || null,
+        entitytype: entityTypes.find(type => type.id === owner.entitytype)?.name || null,
+        registrationno: owner.registrationno || null,
+        registrationdate: owner.registrationdate || null,
+        businesstype: businessTypes.find(type => type.id === owner.businesstype)?.name || null,
+        nationality: owner.nationality || null,
+        houseno: owner.houseno || null,
+        road: owner.road || null,
+        unit: owner.unit || null,
+        village: owner.village || null,
+        district: owner.district || null,
+        province: owner.province || null,
+        title: titles.find(title => title.id === owner.title)?.name || "",
+        gid: owner.gid || null,
+        government_workplace: ministries.find(ministry => ministry.id === owner.government_workplace)?.name || null,
+        isstate: owner.isstate || false,
+        companyname: owner.companyname || null
+      };
+      
+      // Submit the data to the API
+      const response = await saveEntity(entityData).unwrap();
+      
+      // Handle successful response
+      console.log('Entity saved successfully', response);
+      setSubmitSuccess(true);
+      
+      // You can add additional logic here, such as:
+      // - Redirecting to another page
+      // - Refreshing data
+      // - Showing a success message
+      
+    } catch (error) {
+      console.error('Failed to save entity:', error);
+      setSubmitError('ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້. ກະລຸນາລອງໃໝ່ອີກຄັ້ງ.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white dark:bg-gray-800 shadow-md rounded-lg border-2 border-gray-300 dark:border-gray-600">
       <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">ຟອມຂໍ້ມູນນິຕິບຸກຄົນ</h2>
+      
+      {submitSuccess && (
+        <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md">
+          ບັນທຶກຂໍ້ມູນສຳເລັດ
+        </div>
+      )}
+      
+      {submitError && (
+        <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">
+          {submitError}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -99,7 +141,7 @@ export default function EntityForm() {
             <select
               id="title"
               name="title"
-              value={formData.title}
+              value={owner.title}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingTitles}
@@ -126,7 +168,7 @@ export default function EntityForm() {
               type="text"
               id="name"
               name="name"
-              value={formData.name}
+              value={owner.name}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -140,7 +182,7 @@ export default function EntityForm() {
             <select
               id="entitytype"
               name="entitytype"
-              value={formData.entitytype}
+              value={owner.entitytype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingEntityTypes}
@@ -160,14 +202,14 @@ export default function EntityForm() {
           
           {/* Registration Number */}
           <div className="form-group">
-            <label htmlFor="regno" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="registrationno" className="block mb-2 font-semibold text-black dark:text-white">
               ເລກທະບຽນ:
             </label>
             <input
               type="text"
-              id="regno"
-              name="regno"
-              value={formData.regno}
+              id="registrationno"
+              name="registrationno"
+              value={owner.registrationno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -175,14 +217,14 @@ export default function EntityForm() {
           
           {/* Registration Date */}
           <div className="form-group">
-            <label htmlFor="regdate" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="registrationdate" className="block mb-2 font-semibold text-black dark:text-white">
               ວັນທີຂຶ້ນທະບຽນ:
             </label>
             <input
               type="date"
-              id="regdate"
-              name="regdate"
-              value={formData.regdate}
+              id="registrationdate"
+              name="registrationdate"
+              value={owner.registrationdate}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -196,7 +238,7 @@ export default function EntityForm() {
             <select
               id="businesstype"
               name="businesstype"
-              value={formData.businesstype}
+              value={owner.businesstype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingBusinessTypes}
@@ -223,7 +265,7 @@ export default function EntityForm() {
               type="text"
               id="nationality"
               name="nationality"
-              value={formData.nationality}
+              value={owner.nationality}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -231,13 +273,13 @@ export default function EntityForm() {
           
           {/* Government Workplace */}
           <div className="form-group">
-            <label htmlFor="governmentplace" className="block mb-2 font-semibold text-black dark:text-white">
+            <label htmlFor="government_workplace" className="block mb-2 font-semibold text-black dark:text-white">
               ສະຖານທີ່ເຮັດວຽກຂອງລັດ:
             </label>
             <select
-              id="governmentplace"
-              name="governmentplace"
-              value={formData.governmentplace}
+              id="government_workplace"
+              name="government_workplace"
+              value={owner.government_workplace}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingMinistries}
@@ -264,7 +306,7 @@ export default function EntityForm() {
               type="text"
               id="companyname"
               name="companyname"
-              value={formData.companyname}
+              value={owner.companyname}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -283,7 +325,7 @@ export default function EntityForm() {
               <select
                 id="province"
                 name="province"
-                value={formData.province}
+                value={owner.province}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
                 disabled={provincesLoading}
@@ -309,10 +351,10 @@ export default function EntityForm() {
               <select
                 id="district"
                 name="district"
-                value={formData.district}
+                value={owner.district}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={districtsLoading || !formData.province}
+                disabled={districtsLoading || !owner.province}
               >
                 <option value="">ເລືອກເມືອງ</option>
                 {districtsLoading ? (
@@ -335,10 +377,10 @@ export default function EntityForm() {
               <select
                 id="village"
                 name="village"
-                value={formData.village}
+                value={owner.village}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={villagesLoading || !formData.district}
+                disabled={villagesLoading || !owner.district}
               >
                 <option value="">ເລືອກບ້ານ</option>
                 {villagesLoading ? (
@@ -362,7 +404,7 @@ export default function EntityForm() {
                 type="text"
                 id="unit"
                 name="unit"
-                value={formData.unit}
+                value={owner.unit}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               />
@@ -377,7 +419,7 @@ export default function EntityForm() {
                 type="text"
                 id="road"
                 name="road"
-                value={formData.road}
+                value={owner.road}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               />
@@ -392,7 +434,7 @@ export default function EntityForm() {
                 type="text"
                 id="houseno"
                 name="houseno"
-                value={formData.houseno}
+                value={owner.houseno}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               />
@@ -405,8 +447,9 @@ export default function EntityForm() {
           <button
             type="submit"
             className="bg-blue-800 hover:bg-blue-900 text-white py-2 px-6 rounded-md shadow-sm font-semibold"
+            disabled={isSubmitting || isLoading}
           >
-            ບັນທຶກ
+            {isSubmitting || isLoading ? "ກຳລັງບັນທຶກ..." : "ບັນທຶກ"}
           </button>
         </div>
       </form>
