@@ -28,25 +28,19 @@ export default function OwnerAndRightForm() {
     }
   }, [formData, activeRightTab]);
 
-  const handleLandRightChange = (index: number, rightData: any) => {
-    // Remove owner from rightData to prevent nested owner
-    const { owner, ...rightDataWithoutOwner } = rightData;
-    updateLandRight(index, rightDataWithoutOwner);
-  };
+  // const handleAddNewLandRight = () => {
+  //   addLandRight();
+  //   setActiveRightTab(formData.landrights.length); // Focus on the new tab
+  // };
 
-  const handleAddNewLandRight = () => {
-    addLandRight();
-    setActiveRightTab(formData.landrights.length); // Focus on the new tab
-  };
-
-  const handleRemoveLandRight = (index: number) => {
-    removeLandRight(index);
+  // const handleRemoveLandRight = (index: number) => {
+  //   removeLandRight(index);
     
-    // Adjust active tab if needed
-    if (activeRightTab >= formData.landrights.length - 1) {
-      setActiveRightTab(Math.max(0, formData.landrights.length - 2));
-    }
-  };
+  //   // Adjust active tab if needed
+  //   if (activeRightTab >= formData.landrights.length - 1) {
+  //     setActiveRightTab(Math.max(0, formData.landrights.length - 2));
+  //   }
+  // };
 
   if (!formData.gid || !formData?.landrights || formData.landrights.length === 0) {
     return <div className="p-4 text-center">Loading land rights data...</div>;
@@ -56,7 +50,7 @@ export default function OwnerAndRightForm() {
     <div className="space-y-8">
       {/* Land Rights Section with Tabs */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-        <div className="flex items-center justify-between border-b border-gray-300 dark:border-gray-700 p-4">
+        {/* <div className="flex items-center justify-between border-b border-gray-300 dark:border-gray-700 p-4">
           <h2 className="text-xl font-bold text-black dark:text-white">ສິດນຳໃຊ້ທີ່ດິນ ແລະ ເຈົ້າຂອງ</h2>
           <button
             onClick={handleAddNewLandRight}
@@ -64,7 +58,7 @@ export default function OwnerAndRightForm() {
           >
             ເພີ່ມສິດນຳໃຊ້
           </button>
-        </div>
+        </div> */}
 
         {/* Tabs */}
         <div className="flex flex-wrap border-b border-gray-300 dark:border-gray-700">
@@ -80,14 +74,14 @@ export default function OwnerAndRightForm() {
               >
                 ສິດທີ {index + 1}
               </button>
-              {formData.landrights.length > 1 && (
+              {/* {formData.landrights.length > 1 && (
                 <button
                   onClick={() => handleRemoveLandRight(index)}
                   className="text-red-500 hover:text-red-700 ml-1"
                 >
                   ×
                 </button>
-              )}
+              )} */}
             </div>
           ))}
         </div>
@@ -115,11 +109,7 @@ export default function OwnerAndRightForm() {
               <h2 className="text-xl font-bold mb-4 border-b border-gray-300 dark:border-gray-600 pb-2 text-black dark:text-white">
                 ຂໍ້ມູນສິດນຳໃຊ້ທີ່ດິນ
               </h2>
-              <LandRightForm 
-                formData={landright} 
-                onChange={(data) => handleLandRightChange(index, data)}
-                onSubmit={() => {}}
-              />
+              <LandRightForm landRightData={landright} />
             </div>
           </div>
         ))}

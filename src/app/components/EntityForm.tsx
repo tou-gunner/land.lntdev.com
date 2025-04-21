@@ -12,6 +12,7 @@ import {
 } from "../redux/api/apiSlice";
 import { useFormContext } from "../contexts/FormContext";
 import { Entity } from "../contexts/FormContext";
+import { useToast } from "../hooks/useToast";
 
 // Import the useSaveEntityMutation hook
 import { useSaveEntityMutation } from "../redux/api/apiSlice";
@@ -20,8 +21,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
   // const { formData, updateFormData } = useFormContext();
   const [owner, setOwner] = useState<Entity>(initialOwner);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const { showToast } = useToast();
 
   // Create the saveEntity mutation hook
   const [saveEntity, { isLoading }] = useSaveEntityMutation();
@@ -68,10 +68,8 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Reset status
+    // Set submitting state
     setIsSubmitting(true);
-    setSubmitError(null);
-    setSubmitSuccess(false);
     
     try {
       // Format the entity data according to the API requirements
@@ -91,25 +89,22 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
         title: titles.find(title => title.id === owner.title)?.name || "",
         gid: owner.gid || null,
         government_workplace: ministries.find(ministry => ministry.id === owner.government_workplace)?.name || null,
-        isstate: owner.isstate || false,
+        isstate: owner.isstate || null,
         companyname: owner.companyname || null
       };
       
       // Submit the data to the API
       const response = await saveEntity(entityData).unwrap();
       
-      // Handle successful response
-      console.log('Entity saved successfully', response);
-      setSubmitSuccess(true);
+      // Show success notification
+      showToast.success("ບັນທຶກຂໍ້ມູນນິຕິບຸກຄົນສຳເລັດ");
       
-      // You can add additional logic here, such as:
-      // - Redirecting to another page
-      // - Refreshing data
-      // - Showing a success message
+      // Optional: Reset form or redirect
+      // setOwner(initialOwner); // Reset form
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save entity:', error);
-      setSubmitError('ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້. ກະລຸນາລອງໃໝ່ອີກຄັ້ງ.');
+      showToast.error(error.data?.message || "ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້. ກະລຸນາລອງໃໝ່ອີກຄັ້ງ.");
     } finally {
       setIsSubmitting(false);
     }
@@ -118,18 +113,6 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white dark:bg-gray-800 shadow-md rounded-lg border-2 border-gray-300 dark:border-gray-600">
       <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">ຟອມຂໍ້ມູນນິຕິບຸກຄົນ</h2>
-      
-      {submitSuccess && (
-        <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-md">
-          ບັນທຶກຂໍ້ມູນສຳເລັດ
-        </div>
-      )}
-      
-      {submitError && (
-        <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">
-          {submitError}
-        </div>
-      )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -144,7 +127,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
               value={owner.title}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-              disabled={loadingTitles}
+              disabled={loadingTitles || isSubmitting}
             >
               <option value="">ເລືອກຄຳນຳຫນ້ານາມ</option>
               {loadingTitles ? (
@@ -171,6 +154,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
               value={owner.name}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
           </div>
           
@@ -185,7 +169,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
               value={owner.entitytype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-              disabled={loadingEntityTypes}
+              disabled={loadingEntityTypes || isSubmitting}
             >
               <option value="">ເລືອກປະເພດ</option>
               {loadingEntityTypes ? (
@@ -212,6 +196,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
               value={owner.registrationno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
           </div>
           
@@ -227,6 +212,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
               value={owner.registrationdate}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
           </div>
           
@@ -241,7 +227,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
               value={owner.businesstype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-              disabled={loadingBusinessTypes}
+              disabled={loadingBusinessTypes || isSubmitting}
             >
               <option value="">ເລືອກປະເພດ</option>
               {loadingBusinessTypes ? (
@@ -268,6 +254,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
               value={owner.nationality}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
           </div>
           
@@ -282,7 +269,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
               value={owner.government_workplace}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-              disabled={loadingMinistries}
+              disabled={loadingMinistries || isSubmitting}
             >
               <option value="">ເລືອກສະຖານທີ່</option>
               {loadingMinistries ? (
@@ -309,6 +296,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
               value={owner.companyname}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -328,7 +316,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
                 value={owner.province}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={provincesLoading}
+                disabled={provincesLoading || isSubmitting}
               >
                 <option value="">ເລືອກແຂວງ</option>
                 {provincesLoading ? (
@@ -354,7 +342,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
                 value={owner.district}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={districtsLoading || !owner.province}
+                disabled={districtsLoading || !owner.province || isSubmitting}
               >
                 <option value="">ເລືອກເມືອງ</option>
                 {districtsLoading ? (
@@ -380,7 +368,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
                 value={owner.village}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={villagesLoading || !owner.district}
+                disabled={villagesLoading || !owner.district || isSubmitting}
               >
                 <option value="">ເລືອກບ້ານ</option>
                 {villagesLoading ? (
@@ -407,6 +395,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
                 value={owner.unit}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+                disabled={isSubmitting}
               />
             </div>
             
@@ -422,6 +411,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
                 value={owner.road}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+                disabled={isSubmitting}
               />
             </div>
             
@@ -437,6 +427,7 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
                 value={owner.houseno}
                 onChange={handleChange}
                 className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+                disabled={isSubmitting}
               />
             </div>
           </div>

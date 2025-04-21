@@ -285,6 +285,16 @@ export const apiSlice = createApi({
       invalidatesTags: ['Entity']
     }),
 
+    // Save Land Rights
+    saveLandRights: builder.mutation<any, any>({
+      query: (landRightData) => ({
+        url: '/owner/save_landrights',
+        method: 'POST',
+        body: landRightData,
+      }),
+      invalidatesTags: ['LandRight']
+    }),
+
     // Search Land Parcel
     searchLandParcel: builder.query<any, { cadastreMapNo: string, parcelNo: string }>({
       query: ({ cadastreMapNo, parcelNo }) => 
@@ -326,6 +336,7 @@ export const {
   useSearchLandParcelQuery,
   useSaveParcelMutation,
   useSaveEntityMutation,
+  useSaveLandRightsMutation,
   useGetParcelInfoQuery,
   useGetDocumentTypesQuery
 } = apiSlice; 

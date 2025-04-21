@@ -9,6 +9,7 @@ import { FontLoader } from "./components/FontLoader";
 import Navbar from "./components/Navbar";
 import { AuthProvider } from "./components/AuthProvider";
 import { usePathname } from "next/navigation";
+import ToastProvider from "./components/ToastProvider";
 
 // Wrapper component to handle conditional Navbar rendering
 function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           <ThemeProvider defaultTheme="system" storageKey="land3-theme">
             {!isLoginPage && <Navbar />}
             <main className="mx-auto pt-4 pb-12">{children}</main>
+            <ToastProvider />
           </ThemeProvider>
         </AuthProvider>
       </ReduxProvider>

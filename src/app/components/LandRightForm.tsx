@@ -4,42 +4,124 @@ import { useState, useEffect } from "react";
 import { 
   useGetRightTypesQuery, 
   useGetLandUseTypesQuery, 
-  useGetLandTitleHistoryQuery 
+  useGetLandTitleHistoryQuery,
+  useSaveLandRightsMutation
 } from "../redux/api/apiSlice";
+import { useToast } from "../hooks/useToast";
 
-interface LandRightProps {
-  formData?: any;
-  onChange?: (data: any) => void;
-  onSubmit?: (data: any) => void;
-}
-
-export default function LandRightForm({ formData = {}, onChange, onSubmit }: LandRightProps) {
+export default function LandRightForm({ landRightData: initialLandRightData }: { landRightData: any }) {
+  const [landRightData, setLandRightData] = useState(initialLandRightData);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showToast } = useToast();
+  
   // Use RTK Query hooks for data fetching
   const { data: rightTypes = [], isLoading: loadingRightTypes } = useGetRightTypesQuery();
   const { data: landUseTypes = [], isLoading: loadingLandUseTypes } = useGetLandUseTypesQuery();
   const { data: landTitleHistory = [], isLoading: loadingLandTitleHistory } = useGetLandTitleHistoryQuery();
+  
+  // Use the save mutation
+  const [saveLandRights, { isLoading: isSaving }] = useSaveLandRightsMutation();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     
-    // Create updated data
-    const updatedData = {
-      ...formData,
-      [name]: value,
-    };
+    const updateLandRightData = { ...landRightData };
     
-    // Call onChange if provided
-    if (onChange) {
-      onChange(updatedData);
+    // Handle cascading selection for location fields
+    if (name === "province") {
+      updateLandRightData[name] = value;
+      updateLandRightData["district"] = "";
+      updateLandRightData["village"] = "";
+    } else if (name === "district") {
+      updateLandRightData[name] = value;
+      updateLandRightData["village"] = "";
+    } else if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      updateLandRightData[name] = checked;
+    } else {
+      updateLandRightData[name] = value;
+    }
+
+    setLandRightData(updateLandRightData);
+    
+    // Clear error for the field that was changed
+    if (errors[name]) {
+      const updatedErrors = { ...errors };
+      delete updatedErrors[name];
+      setErrors(updatedErrors);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Validate form data
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    // Check required fields based on schema
+    if (!landRightData.parcelid) {
+      newErrors.parcelid = "ກະລຸນາລະບຸລະຫັດຕອນດິນ";
+    }
+    
+    if (!landRightData.ownerid) {
+      newErrors.ownerid = "ກະລຸນາລະບຸລະຫັດເຈົ້າຂອງ";
+    }
+    
+    // Additional validations can be added here
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSubmit) {
-      onSubmit(formData);
-    } else {
-      console.log("Form data:", formData);
+    
+    if (!validateForm()) {
+      showToast.error("ກະລຸນາແກ້ໄຂຂໍ້ມູນທີ່ບໍ່ຖືກຕ້ອງ");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Format dates if needed
+      const dataToSubmit = {
+        "old_ownerid": landRightData.old_ownerid || null,
+        "part": landRightData.part || null,
+        "history": landRightData.history || null,
+        "righttype": landRightData.righttype || null,
+        "landregisterbookno": landRightData.landregisterbookno || null,
+        "titlenumber": landRightData.titlenumber || null,
+        "titleeditionno": landRightData.titleeditionno || null,
+        "landrightcategory": landRightData.landrightcategory || null,
+        "landregistersheetno": landRightData.landregistersheetno || null,
+        "stateland": landRightData.stateland.toString(),
+        "gid": landRightData.gid || null,
+        "parcelid": landRightData.parcelid || null,
+        "ownerid": landRightData.ownerid || null,
+        "barcode": landRightData.barcode || null,
+        "valid_from": landRightData.valid_from || null,
+        "valid_till": landRightData.valid_till || null,
+        "date_conclusion": landRightData.date_conclusion || null,
+        "date_title_printed": landRightData.date_title_printed || null,
+        "date_public_display": landRightData.date_public_display || null,
+        "date_title_send_to_ponre": landRightData.date_title_send_to_ponre || null,
+        "date_title_issued": landRightData.date_title_issued || null
+      };
+      
+      // Send data to server
+      const response = await saveLandRights(dataToSubmit).unwrap();
+      
+      if (response.success) {
+        showToast.success("ບັນທຶກຂໍ້ມູນສຳເລັດ");
+        // You can add redirection or additional logic here
+      } else {
+        showToast.error(response.message || "ບັນທຶກຂໍ້ມູນບໍ່ສຳເລັດ");
+      }
+    } catch (error: any) {
+      console.error("Error saving land right data:", error);
+      showToast.error(error.data?.message || "ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກຂໍ້ມູນ");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -57,10 +139,10 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
             <select
               id="righttype"
               name="righttype"
-              value={formData.righttype || ""}
+              value={landRightData.righttype}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-              disabled={loadingRightTypes}
+              disabled={loadingRightTypes || isSubmitting}
             >
               <option value="">ເລືອກສະຖານະ</option>
               {loadingRightTypes ? (
@@ -73,6 +155,9 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
                 ))
               )}
             </select>
+            {errors.righttype && (
+              <p className="text-red-500 mt-1 text-sm">{errors.righttype}</p>
+            )}
           </div>
           
           {/* Land Title Number */}
@@ -84,10 +169,14 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
               type="text"
               id="titlenumber"
               name="titlenumber"
-              value={formData.titlenumber || ""}
+              value={landRightData.titlenumber}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
+            {errors.titlenumber && (
+              <p className="text-red-500 mt-1 text-sm">{errors.titlenumber}</p>
+            )}
           </div>
           
           {/* Issue Number */}
@@ -99,10 +188,14 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
               type="text"
               id="titleeditionno"
               name="titleeditionno"
-              value={formData.titleeditionno || ""}
+              value={landRightData.titleeditionno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
+            {errors.titleeditionno && (
+              <p className="text-red-500 mt-1 text-sm">{errors.titleeditionno}</p>
+            )}
           </div>
           
           {/* Register Book Number */}
@@ -114,10 +207,14 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
               type="text"
               id="landregisterbookno"
               name="landregisterbookno"
-              value={formData.landregisterbookno || ""}
+              value={landRightData.landregisterbookno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
+            {errors.landregisterbookno && (
+              <p className="text-red-500 mt-1 text-sm">{errors.landregisterbookno}</p>
+            )}
           </div>
           
           {/* Register Number */}
@@ -129,10 +226,14 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
               type="text"
               id="landregistersheetno"
               name="landregistersheetno"
-              value={formData.landregistersheetno || ""}
+              value={landRightData.landregistersheetno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
+            {errors.landregistersheetno && (
+              <p className="text-red-500 mt-1 text-sm">{errors.landregistersheetno}</p>
+            )}
           </div>
           
           {/* Approval Type */}
@@ -143,10 +244,10 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
             <select
               id="landrightcategory"
               name="landrightcategory"
-              value={formData.landrightcategory || ""}
+              value={landRightData.landrightcategory}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-              disabled={loadingLandUseTypes}
+              disabled={loadingLandUseTypes || isSubmitting}
             >
               <option value="">ເລືອກປະເພດ</option>
               {loadingLandUseTypes ? (
@@ -159,6 +260,9 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
                 ))
               )}
             </select>
+            {errors.landrightcategory && (
+              <p className="text-red-500 mt-1 text-sm">{errors.landrightcategory}</p>
+            )}
           </div>
           
           {/* Land Title History */}
@@ -169,10 +273,10 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
             <select
               id="history"
               name="history"
-              value={formData.history || ""}
+              value={landRightData.history}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-              disabled={loadingLandTitleHistory}
+              disabled={loadingLandTitleHistory || isSubmitting}
             >
               <option value="">ເລືອກການໄດ້ມາ</option>
               {loadingLandTitleHistory ? (
@@ -185,6 +289,9 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
                 ))
               )}
             </select>
+            {errors.history && (
+              <p className="text-red-500 mt-1 text-sm">{errors.history}</p>
+            )}
           </div>
           
           {/* Portion */}
@@ -196,10 +303,14 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
               type="text"
               id="part"
               name="part"
-              value={formData.part || ""}
+              value={landRightData.part}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
+            {errors.part && (
+              <p className="text-red-500 mt-1 text-sm">{errors.part}</p>
+            )}
           </div>
           
           {/* Date fields */}
@@ -211,10 +322,14 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
               type="date"
               id="date_title_issued"
               name="date_title_issued"
-              value={formData.date_title_issued ? formData.date_title_issued.split('T')[0] : ""}
+              value={landRightData.date_title_issued ? landRightData.date_title_issued.split('T')[0] : ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
+            {errors.date_title_issued && (
+              <p className="text-red-500 mt-1 text-sm">{errors.date_title_issued}</p>
+            )}
           </div>
           
           {/* Land Title Delivery Date */}
@@ -226,10 +341,14 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
               type="date"
               id="date_title_send_to_ponre"
               name="date_title_send_to_ponre"
-              value={formData.date_title_send_to_ponre ? formData.date_title_send_to_ponre.split('T')[0] : ""}
+              value={landRightData.date_title_send_to_ponre ? landRightData.date_title_send_to_ponre.split('T')[0] : ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
+            {errors.date_title_send_to_ponre && (
+              <p className="text-red-500 mt-1 text-sm">{errors.date_title_send_to_ponre}</p>
+            )}
           </div>
           
           {/* Conclusion Date */}
@@ -241,10 +360,14 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
               type="date"
               id="date_conclusion"
               name="date_conclusion"
-              value={formData.date_conclusion ? formData.date_conclusion.split('T')[0] : ""}
+              value={landRightData.date_conclusion ? landRightData.date_conclusion.split('T')[0] : ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
+            {errors.date_conclusion && (
+              <p className="text-red-500 mt-1 text-sm">{errors.date_conclusion}</p>
+            )}
           </div>
           
           {/* Print Date */}
@@ -256,10 +379,14 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
               type="date"
               id="date_title_printed"
               name="date_title_printed"
-              value={formData.date_title_printed ? formData.date_title_printed.split('T')[0] : ""}
+              value={landRightData.date_title_printed ? landRightData.date_title_printed.split('T')[0] : ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
+            {errors.date_title_printed && (
+              <p className="text-red-500 mt-1 text-sm">{errors.date_title_printed}</p>
+            )}
           </div>
           
           {/* Display Date */}
@@ -271,10 +398,14 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
               type="date"
               id="date_public_display"
               name="date_public_display"
-              value={formData.date_public_display ? formData.date_public_display.split('T')[0] : ""}
+              value={landRightData.date_public_display ? landRightData.date_public_display.split('T')[0] : ""}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={isSubmitting}
             />
+            {errors.date_public_display && (
+              <p className="text-red-500 mt-1 text-sm">{errors.date_public_display}</p>
+            )}
           </div>
         </div>
         
@@ -282,8 +413,9 @@ export default function LandRightForm({ formData = {}, onChange, onSubmit }: Lan
           <button
             type="submit"
             className="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded shadow-sm transition-colors"
+            disabled={isSubmitting}
           >
-            ບັນທຶກ
+            {isSubmitting ? "ກຳລັງບັນທຶກ..." : "ບັນທຶກ"}
           </button>
         </div>
       </form>
