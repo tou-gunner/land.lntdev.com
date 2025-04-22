@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SplitViewPdfViewer, { SplitViewPdfViewerRef } from "../components/SplitViewPdfViewer";
-import { DocTypeRequest, updateDocumentTypes } from "../lib/api";
+import { DocTypeRequest, updateDocumentTypes, lockParcelRecord, fetchPdfInfo } from "../lib/api";
 import { useGetDocumentTypesQuery } from "../redux/api/apiSlice";
 import { getCurrentUser } from "../lib/auth";
 import { withAuth } from "../components/AuthProvider";
+import Link from "next/link";
+import { useToast } from "../hooks/useToast";
 
 // Main component that uses searchParams
 function DocumentTypeUpdateContent() {
@@ -14,8 +16,7 @@ function DocumentTypeUpdateContent() {
   const searchParams = useSearchParams();
   const parcelIdFromUrl = searchParams.get("parcel");
   const parcelId = parcelIdFromUrl;
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-  
+  const { showToast } = useToast();
   // Get the user from storage using useMemo
   const user = useMemo(() => getCurrentUser(), []);
   
@@ -29,6 +30,7 @@ function DocumentTypeUpdateContent() {
   const [pdfFile, setPdfFile] = useState<string>("");
   const [savedPages, setSavedPages] = useState<DocTypeRequest[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isLocking, setIsLocking] = useState<boolean>(false);
 
   // Fetch document types from API
   const { data: documentTypes, isLoading: isLoadingDocTypes, error: docTypesError } = useGetDocumentTypesQuery();
@@ -39,22 +41,46 @@ function DocumentTypeUpdateContent() {
       return;
     }
     
-    // Check if PDF exists and get the file
-    const fetchPdfInfo = async () => {
+    // Attempt to lock the parcel record for this user session
+    const lockParcel = async () => {
       try {
-        setLoading(true);
-        
-        // Check if the PDF exists
-        const pdfUrl = `${apiBaseUrl}/parcel/pdf?parcel=${parcelId}`;
-        const pdfResponse = await fetch(pdfUrl);
-        
-        if (!pdfResponse.ok) {
-          setMessage("ບໍ່ສາມາດຊອກຫາເອກະສານ PDF ສຳລັບຕອນດິນນີ້");
-          setLoading(false);
-          return;
+        if (!user) {
+          throw new Error('User not authenticated');
         }
         
+        setIsLocking(true);
+        setMessage("ກຳລັງລັອກຕອນດິນ...");
+        
+        // Use the imported lockParcelRecord function from api.ts
+        await lockParcelRecord(user.user_name, parcelId);
+        
+        setMessage("ລັອກຕອນດິນສຳເລັດ");
+        
+        // Continue with PDF loading after successful lock
+        fetchParcelPdf();
+      } catch (error) {
+        console.error('Error locking parcel record:', error);
+        setMessage('ບໍ່ສາມາດລັອກເອກະສານຕອນດິນໄດ້. ກະລຸນາລອງໃໝ່ອີກຄັ້ງ.');
+        // Redirect back to the documents list page after a short delay
+        setTimeout(() => {
+          router.push('/documents-list');
+        }, 3000);
+      } finally {
+        setIsLocking(false);
+      }
+    };
+    
+    // Check if PDF exists and get the file using the API function
+    const fetchParcelPdf = async () => {
+      try {
+        setLoading(true);
+        setMessage("ກຳລັງໂຫຼດຂໍ້ມູນ PDF...");
+        
+        // Use the imported fetchPdfInfo function from api.ts
+        const { pdfUrl } = await fetchPdfInfo(parcelId);
+        
         setPdfFile(pdfUrl);
+        setMessage("");
         setLoading(false);
       } catch (error) {
         console.error("Error fetching PDF info:", error);
@@ -63,8 +89,9 @@ function DocumentTypeUpdateContent() {
       }
     };
     
-    fetchPdfInfo();
-  }, [parcelId, apiBaseUrl]);
+    // First lock the parcel, then fetch the PDF
+    lockParcel();
+  }, [parcelId, user, router]);
 
   useEffect(() => {
     setDocType(currentPageSaved?.doctype || "");
@@ -172,7 +199,7 @@ function DocumentTypeUpdateContent() {
       // Redirect to land management page after success
       setTimeout(() => {
         router.push(`/document-forms?parcel=${parcelId}`);
-      }, 2000);
+      }, 200);
       
     } catch (error) {
       console.error("Error updating document types:", error);
@@ -195,12 +222,27 @@ function DocumentTypeUpdateContent() {
         <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md w-full max-w-md">
           <h1 className="text-2xl font-bold mb-4 text-center">ອັບເດດປະເພດເອກະສານ</h1>
           <p className="text-red-500 text-center">ບໍ່ມີລະຫັດຕອນດິນ. ກະລຸນາລະບຸລະຫັດຕອນດິນ.</p>
-          <button
-            onClick={() => router.push('/land-management')}
-            className="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          <Link
+            href="/documents-list"
+            className="mt-4 block w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-center"
           >
             ໄປທີ່ໜ້າຈັດການຂໍ້ມູນທີ່ດິນ
-          </button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state for locking
+  if (isLocking) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md w-full max-w-md">
+          <h1 className="text-2xl font-bold mb-4 text-center">ອັບເດດປະເພດເອກະສານ</h1>
+          <div className="flex flex-col items-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <p className="text-gray-700 dark:text-gray-300 text-center">ກຳລັງລັອກຕອນດິນ...</p>
+          </div>
         </div>
       </div>
     );
@@ -255,20 +297,26 @@ function DocumentTypeUpdateContent() {
                 ຜູ້ໃຊ້: {user.user_name}
               </div>
             )}
+            
+            {message && (
+              <div className={`mt-4 p-3 rounded-md ${message.includes('ຜິດພາດ') || message.includes('ບໍ່ສາມາດ') ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'}`}>
+                {message}
+              </div>
+            )}
 
             {/* All Pages Grid */}
             <div className="mt-6">
               <p className="text-sm font-medium mb-2">ໜ້າທັງໝົດ: {pdfPages} ໜ້າ</p>
               {pdfPages > 0 && (
                 <div className="mt-2 p-2 border rounded-md bg-gray-50 dark:bg-gray-700 max-h-60 overflow-y-auto">
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="inline-flex flex-wrap gap-2">
                     {Array.from({ length: pdfPages }, (_, i) => i + 1).map(page => {
                       const isSaved = savedPages.some(savedPage => savedPage.page === page);
                       return (
                         <div 
                           key={page} 
                           className={`
-                            text-center py-1 cursor-pointer rounded-md text-xs flex items-center justify-center
+                            text-center w-10 py-1 cursor-pointer rounded-md text-xs flex items-center justify-center
                             ${page === currentPage ? 'ring-2 ring-blue-500' : ''}
                             ${isSaved 
                               ? 'bg-green-100 hover:bg-green-200 dark:bg-green-800 dark:hover:bg-green-700 text-green-800 dark:text-green-100' 
@@ -444,19 +492,20 @@ function DocumentTypeUpdateContent() {
                 </div>
               )}
             </div>
-            
-            {message && (
-              <div className={`mt-4 p-3 rounded-md ${message.includes('ຜິດພາດ') || message.includes('ບໍ່ສາມາດ') ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'}`}>
-                {message}
-              </div>
-            )}
           </div>
         </SplitViewPdfViewer>
       ) : (
         <div className="flex flex-col items-center justify-center min-h-[50vh]">
           <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md w-full max-w-md">
             <h1 className="text-2xl font-bold mb-4 text-center">ອັບເດດປະເພດເອກະສານ</h1>
-            <p className="text-red-500 text-center">{message || "ກຳລັງໂຫຼດເອກະສານ..."}</p>
+            {loading ? (
+              <div className="flex flex-col items-center space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                <p className="text-gray-700 dark:text-gray-300 text-center">ກຳລັງໂຫຼດເອກະສານ...</p>
+              </div>
+            ) : (
+              <p className="text-red-500 text-center">{message || "ບໍ່ພົບຂໍ້ມູນເອກະສານ"}</p>
+            )}
           </div>
         </div>
       )}

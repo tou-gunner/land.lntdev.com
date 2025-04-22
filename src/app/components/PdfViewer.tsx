@@ -10,6 +10,17 @@ import { useTheme } from './ThemeProvider';
 import { pdfjs } from 'react-pdf';
 pdfjs.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
+// Additional CSS for the PDF overlay
+const overlayStyles = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  bottom: 0,
+  right: 0,
+  zIndex: 10, // Ensure it's above the PDF content
+  background: 'transparent', // Make it invisible
+} as const;
+
 interface PdfViewerProps {
   pdfUrl: string;
   height?: string;
@@ -210,7 +221,12 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(({
   }
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-white dark:bg-gray-900" style={{ height }}>
+    <div 
+      ref={containerRef} 
+      className="flex flex-col h-full bg-white dark:bg-gray-900" 
+      style={{ height }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       {showControls && numPages > 0 && !useBuiltinPdfReader && (
         <div className="sticky top-0 z-10 flex justify-center items-center gap-2 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <div className="flex justify-center items-center gap-3">
@@ -303,17 +319,33 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(({
         )}
 
         {useBuiltinPdfReader ? (
-          <iframe
-            ref={iframeRef}
-            src={`${pdfUrl}#toolbar=0&navpanes=0&view=FitH`}
-            className="w-full h-full border-0"
-            title="PDF Document"
-            style={{ 
-              userSelect: 'none'
-            }}
-          />
+          <div className="relative w-full h-full">
+            <iframe
+              ref={iframeRef}
+              src={`${pdfUrl}#toolbar=0&navpanes=0&view=FitH`}
+              className="w-full h-full border-0"
+              title="PDF Document"
+              style={{ 
+                userSelect: 'none'
+              }}
+              onLoad={() => {
+                // Attempt to disable right-click in the iframe content
+                if (iframeRef.current?.contentWindow?.document) {
+                  iframeRef.current.contentWindow.document.addEventListener('contextmenu', e => e.preventDefault());
+                }
+              }}
+            />
+            {/* Add overlay div to catch right-clicks */}
+            <div 
+              style={overlayStyles} 
+              onContextMenu={(e) => e.preventDefault()}
+            />
+          </div>
         ) : (
-          <div className="flex-1 flex justify-center px-2 py-4">
+          <div 
+            className="flex-1 flex justify-center px-2 py-4 relative"
+            onContextMenu={(e) => e.preventDefault()}
+          >
             <Document
               file={pdfUrl}
               onLoadSuccess={onDocumentLoadSuccess}
@@ -338,6 +370,11 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(({
                 />
               )}
             </Document>
+            {/* Add overlay div to catch right-clicks */}
+            <div 
+              style={overlayStyles} 
+              onContextMenu={(e) => e.preventDefault()}
+            />
           </div>
         )}
       </div>

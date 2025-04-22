@@ -4,12 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { login, isAuthenticated } from "../lib/auth";
 
-// Set this environment variable in your .env.local file
-if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_API_URL) {
-  // Fallback for development
-  process.env.NEXT_PUBLIC_API_URL = "https://mcconsultancy.la:9092";
-}
-
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");

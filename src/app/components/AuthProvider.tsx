@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCurrentUser, isAuthenticated, logout } from "../lib/auth";
+import { getCurrentUser, isAuthenticated, logout, saveUserData } from "../lib/auth";
 
 // Define the auth context type
 interface AuthContextType {
@@ -10,6 +10,7 @@ interface AuthContextType {
   user: any | null;
   loading: boolean;
   logout: () => void;
+  saveUserData: (userData: any) => void;
 }
 
 // Create context with default values
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   logout: () => {},
+  saveUserData: () => {},
 });
 
 // Custom hook to use the auth context
@@ -66,6 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     loading,
     logout,
+    saveUserData,
   };
 
   return (

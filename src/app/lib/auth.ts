@@ -15,7 +15,7 @@ export const getCurrentUser = (): User | null => {
     return null;
   }
   
-  const userString = localStorage.getItem('user');
+  const userString = localStorage.getItem('dol_user');
   if (!userString) {
     return null;
   }
@@ -26,6 +26,15 @@ export const getCurrentUser = (): User | null => {
     console.error('Error parsing user data:', error);
     return null;
   }
+};
+
+// Function to save user data to localStorage
+export const saveUserData = (userData: User): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  localStorage.setItem('dol_user', JSON.stringify(userData));
 };
 
 // Function to check if the user is logged in
@@ -39,7 +48,7 @@ export const logout = (): void => {
     return;
   }
   
-  localStorage.removeItem('user');
+  localStorage.removeItem('dol_user');
   
   // Redirect to login page
   window.location.href = '/login';
@@ -70,8 +79,8 @@ export const login = async (user_name: string, password: string): Promise<User |
     if (data.success && data.data.length > 0) {
       const user = data.data[0];
       
-      // Save user to localStorage
-      localStorage.setItem('user', JSON.stringify(user));
+      // Save user to localStorage with dol_user key
+      saveUserData(user);
       
       return user;
     }

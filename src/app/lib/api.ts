@@ -29,7 +29,35 @@ export interface DocTypeRequest {
   user_name: string;
 }
 
-const API_BASE_URL = 'https://mcconsultancy.la:9092';
+export interface ApiParcelItem {
+  parcel: string;
+  file_name: string;
+  province_code: string;
+  district_code: string;
+  village_code: string;
+  user_name: string | null;
+  date_upload: string;
+  province_lao: string | null;
+  district_lao: string | null;
+  village_lao: string | null;
+  total_count: number;
+  total_pages: number;
+}
+
+export interface Parcel {
+  gid: string;
+  parcelno: string;
+  cadastremapno: string;
+  barcode: string;
+  village: string;
+  district: string;
+  province: string;
+  villageCode?: string;
+  districtCode?: string;
+  provinceCode?: string;
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Helper function to transform API items to the format needed by dropdowns
 function transformApiItems(items: ApiItem[]): TransformedItem[] {
@@ -39,6 +67,71 @@ function transformApiItems(items: ApiItem[]): TransformedItem[] {
     englishName: item.description_english || ''
   }));
 }
+
+// Fetch parcels with filtering
+export async function fetchParcels(params: {
+  currentPage: number;
+  itemsPerPage: number;
+  selectedProvince?: string;
+  selectedDistrict?: string;
+  selectedVillage?: string;
+}): Promise<{ parcels: Parcel[], totalItems: number }> {
+  try {
+    const { currentPage, itemsPerPage, selectedProvince, selectedDistrict, selectedVillage } = params;
+    
+    // Construct the query URL with filters
+    let url = `${API_BASE_URL}/parcel/list_parcels_filter?page_no=${currentPage}&offset=${itemsPerPage}`;
+    
+    if (selectedProvince) url += `&province=${selectedProvince}`;
+    if (selectedDistrict) url += `&district=${selectedDistrict}`;
+    if (selectedVillage) url += `&village=${selectedVillage}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch parcels");
+    }
+    
+    const data = await response.json();
+
+    // Transform the data structure to match our interface
+    const transformedParcels = data.data.map((item: ApiParcelItem) => {
+      const provinceName = item.province_code;
+      const districtName = item.district_code;
+      const villageName = item.village_code;
+      
+      return {
+        gid: item.parcel,
+        // Extract parcel number from the first part before underscore for parcelno
+        parcelno: item.parcel.split('_')[0],
+        // Use full parcel identifier as barcode for display
+        barcode: item.parcel,
+        // Use available data from Redux or API response
+        village: villageName,
+        district: districtName,
+        province: provinceName,
+        cadastremapno: item.file_name || 'N/A',
+        // Store original codes for filtering
+        villageCode: item.village_code,
+        districtCode: item.district_code,
+        provinceCode: item.province_code
+      };
+    });
+    
+    // Return the parsed data and total items count
+    return {
+      parcels: transformedParcels,
+      totalItems: data.data?.[0]?.total_pages || 0
+    };
+  } catch (error) {
+    console.error('Error fetching parcels:', error);
+    throw error;
+  }
+}
+
+// ----------------------
+// Document and PDF Management Functions
+// ----------------------
 
 // Document type management functions
 export async function updateDocumentTypes(docTypes: DocTypeRequest[]) {
@@ -62,6 +155,63 @@ export async function updateDocumentTypes(docTypes: DocTypeRequest[]) {
     throw error;
   }
 }
+
+// Function to check if PDF exists for a parcel
+export async function fetchPdfInfo(parcelId: string) {
+  try {
+    const apiBaseUrl = API_BASE_URL || '';
+    const pdfUrl = `${apiBaseUrl}/parcel/pdf?parcel=${parcelId}`;
+    
+    const response = await fetch(pdfUrl);
+    
+    if (!response.ok) {
+      throw new Error("ບໍ່ສາມາດຊອກຫາເອກະສານ PDF ສຳລັບຕອນດິນນີ້");
+    }
+    
+    return { pdfUrl };
+  } catch (error) {
+    console.error("Error fetching PDF info:", error);
+    throw error;
+  }
+}
+
+// Function to lock a parcel record for a user
+export async function lockParcelRecord(username: string, parcelId: string) {
+  try {
+    const url = `${API_BASE_URL}/parcel/user_lock_record`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        user_name: username,
+        parcel: parcelId
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to lock the parcel record');
+    }
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to lock the parcel record');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error locking parcel record:', error);
+    throw error;
+  }
+}
+
+// ----------------------
+// Utility and Reference Data Functions
+// ----------------------
 
 export async function fetchLandUseZones() {
   try {

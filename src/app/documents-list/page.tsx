@@ -8,23 +8,9 @@ import { apiSlice } from "../redux/api/apiSlice";
 import { ReduxProvider } from "../redux/provider";
 import { getCurrentUser } from "../lib/auth";
 import { withAuth } from "../components/AuthProvider";
-
-interface Parcel {
-  gid: string;
-  parcelno: string;
-  cadastremapno: string;
-  barcode: string;
-  village: string;
-  district: string;
-  province: string;
-  villageCode?: string;
-  districtCode?: string;
-  provinceCode?: string;
-}
+import { fetchParcels, Parcel } from "../lib/api";
 
 function DocumentsListContent() {
-  const router = useRouter();
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,147 +32,28 @@ function DocumentsListContent() {
     skip: !selectedDistrict 
   });
   
-  // Add lockingParcel state to track API call status
-  const [lockingParcel, setLockingParcel] = useState<string | null>(null);
-
   // Cache the current user with useMemo to avoid unnecessary retrieval on re-renders
   const currentUser = useMemo(() => getCurrentUser(), []);
 
   useEffect(() => {
-    fetchParcels();
+    fetchParcelData();
   }, [currentPage, itemsPerPage, selectedProvince, selectedDistrict, selectedVillage]);
 
-  // Helper function to find province name from code
-  const getProvinceName = (provinceCode: string): string => {
-    const province = provinces.find(p => p.id === provinceCode);
-    return province?.name || `ແຂວງລະຫັດ ${provinceCode}`;
-  };
-
-  // Helper function to find district name from code
-  const getDistrictName = (districtCode: string): string => {
-    const district = districts.find(d => d.id === districtCode);
-    return district?.name || `ເມືອງລະຫັດ ${districtCode}`;
-  };
-
-  // Helper function to find village name from code
-  const getVillageName = (villageCode: string): string => {
-    const village = villages.find(v => v.id === villageCode);
-    return village?.name || `ບ້ານລະຫັດ ${villageCode}`;
-  };
-
-  const fetchParcels = async () => {
+  const fetchParcelData = async () => {
     try {
       setLoading(true);
       
-      // Construct the query URL with filters
-      let url = `${apiBaseUrl}/parcel/list_parcels_filter?page_no=${currentPage}&offset=${itemsPerPage}`;
-      
-      if (selectedProvince) url += `&province=${selectedProvince}`;
-      if (selectedDistrict) url += `&district=${selectedDistrict}`;
-      if (selectedVillage) url += `&village=${selectedVillage}`;
-      
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch parcels");
-      }
-      
-      const data = await response.json();
-
-      // Define the type for the API response items
-      interface ApiParcelItem {
-        parcel: string;
-        file_name: string;
-        province_code: string;
-        district_code: string;
-        village_code: string;
-        user_name: string | null;
-        date_upload: string;
-        province_lao: string | null;
-        district_lao: string | null;
-        village_lao: string | null;
-        total_count: number;
-        total_pages: number;
-      }
-
-      // Filter out parcels that are locked by other users
-      const filteredData = data.data.filter((item: ApiParcelItem) => {
-        // Show parcels with no user_name (not locked)
-        // Or parcels locked by the current user
-        return item.user_name === null || 
-               (currentUser && item.user_name === currentUser.user_name);
-      });
-
-      // Transform the data structure to match our interface
-      const transformedParcels = filteredData.map((item: ApiParcelItem) => {
-        // Try to find the province name from our Redux state or from API response
-        const provinceName = item.province_lao || getProvinceName(item.province_code);
-        
-        // Try to find the district name from our Redux state or from API response
-        const districtName = item.district_lao || getDistrictName(item.district_code);
-        
-        // Try to find the village name from our Redux state or from API response
-        const villageName = item.village_lao || getVillageName(item.village_code);
-        
-        return {
-          gid: item.parcel,
-          // Extract parcel number from the first part before underscore for parcelno
-          parcelno: item.parcel.split('_')[0],
-          // Use full parcel identifier as barcode for display
-          barcode: item.parcel,
-          // Use available data from Redux or API response
-          village: villageName,
-          district: districtName,
-          province: provinceName,
-          cadastremapno: item.file_name || 'N/A',
-          // Store original codes for filtering
-          villageCode: item.village_code,
-          districtCode: item.district_code,
-          provinceCode: item.province_code
-        };
+      // Use the fetchParcels function from api.ts
+      const result = await fetchParcels({
+        currentPage,
+        itemsPerPage,
+        selectedProvince,
+        selectedDistrict,
+        selectedVillage
       });
       
-      setParcels(transformedParcels);
-      
-      // Set total items to the length of filtered data
-      setTotalItems(filteredData?.[0]?.total_pages || 0);
-      
-      // Function to trigger loading of all location data needed for the display
-      const loadAllLocations = async (data: any) => {
-        // Extract unique province codes from the data
-        const uniqueProvinceCodes = [...new Set(data.map((item: ApiParcelItem) => item.province_code))];
-        
-        // Load each province's districts if not already loaded
-        for (const provinceCode of uniqueProvinceCodes) {
-          if (provinceCode && !districts.some(d => d.id === provinceCode)) {
-            try {
-              // This will trigger the appropriate RTK Query to load the districts
-              // Just note we're not awaiting as this is just to prime the cache
-              apiSlice.endpoints.getDistricts.initiate(provinceCode as string);
-            } catch (error) {
-              console.error(`Error loading districts for province ${provinceCode}:`, error);
-            }
-          }
-        }
-        
-        // Extract unique district codes from the data
-        const uniqueDistrictCodes = [...new Set(data.map((item: ApiParcelItem) => item.district_code))];
-        
-        // Load each district's villages if not already loaded
-        for (const districtCode of uniqueDistrictCodes) {
-          if (districtCode && !villages.some(v => v.id === districtCode)) {
-            try {
-              // This will trigger the appropriate RTK Query to load the villages
-              apiSlice.endpoints.getVillages.initiate(districtCode as string);
-            } catch (error) {
-              console.error(`Error loading villages for district ${districtCode}:`, error);
-            }
-          }
-        }
-      };
-      
-      loadAllLocations(data.data);
-      
+      setParcels(result.parcels);
+      setTotalItems(result.totalItems);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching parcels:", error);
@@ -218,7 +85,7 @@ function DocumentsListContent() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    fetchParcels();
+    fetchParcelData();
   };
 
   const handleReset = () => {
@@ -246,54 +113,6 @@ function DocumentsListContent() {
     
     return currentPage - 2 + i;
   });
-
-  // Add a function to handle locking and redirect
-  const handleManageDocuments = async (parcelBarcode: string) => {
-    try {
-      setLockingParcel(parcelBarcode);
-      
-      // Use the memoized user instead of calling getCurrentUser() again
-      if (!currentUser) {
-        throw new Error('User not authenticated');
-      }
-      
-      // Use the username from auth
-      const username = currentUser.user_name;
-      
-      // Check the OpenAPI spec for the correct endpoint format
-      const url = `${apiBaseUrl}/parcel/user_lock_record`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          user_name: username,
-          parcel: parcelBarcode
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to lock the parcel record');
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        // If successful, redirect to the documents-types page
-        router.push(`/documents-types?parcel=${parcelBarcode}`);
-      } else {
-        throw new Error(result.message || 'Failed to lock the parcel record');
-      }
-    } catch (error) {
-      console.error('Error locking parcel record:', error);
-      setError('ບໍ່ສາມາດລັອກເອກະສານຕອນດິນໄດ້. ກະລຸນາລອງໃໝ່ອີກຄັ້ງ.');
-    } finally {
-      setLockingParcel(null);
-    }
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -428,20 +247,15 @@ function DocumentsListContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.province}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-3">
-                          <button
-                            onClick={() => handleManageDocuments(parcel.barcode)}
+                          <Link
+                            href={`/document-types?parcel=${parcel.barcode}`}
                             className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                             title="ຈັດການເອກະສານຕອນດິນ"
-                            disabled={lockingParcel === parcel.barcode}
                           >
-                            {lockingParcel === parcel.barcode ? (
-                              <div className="animate-spin h-5 w-5 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-                            ) : (
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            )}
-                          </button>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </Link>
                         </div>
                       </td>
                     </tr>

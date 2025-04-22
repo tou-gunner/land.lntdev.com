@@ -4,7 +4,7 @@ const { createServer } = require("http");
 const { parse } = require("url");
 const next = require("next");
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3010;
 const dev = process.env.NODE_ENV !== 'production';
 
 // Check if we're in standalone mode (Next.js 12+) or regular mode
