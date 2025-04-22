@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { isAuthenticated } from "./lib/auth";
+import { createPath } from "./lib/navigation";
 
 export default function Home() {
   const router = useRouter();
@@ -12,9 +13,9 @@ export default function Home() {
   useEffect(() => {
     // Check authentication status and redirect accordingly
     if (isAuthenticated()) {
-      router.push("/documents-list");
+      router.push(createPath("/documents-list"));
     } else {
-      router.push("/login");
+      router.push(createPath("/login"));
     }
   }, [router]);
 

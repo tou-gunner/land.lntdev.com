@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { login, isAuthenticated } from "../lib/auth";
+import { createPath } from "../lib/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated()) {
-      router.push("/");
+      router.push(createPath("/"));
     }
   }, [router]);
 
@@ -28,7 +29,7 @@ export default function LoginPage() {
       
       if (user) {
         // Redirect to home page or dashboard
-        router.push("/");
+        router.push(createPath("/"));
       } else {
         // Handle authentication failure
         setError("ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ");

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser, logout } from "../lib/auth";
+import { createPath } from "../lib/navigation";
 import { ThemeToggle } from "./ThemeToggle";
+import AppLink from "./AppLink";
 
 export default function Navbar() {
   const router = useRouter();
@@ -19,6 +20,8 @@ export default function Navbar() {
   const handleLogout = () => {
     logout();
     setUser(null);
+    // Use router.push with the base path included
+    router.push(createPath('/login'));
   };
 
   return (
@@ -45,11 +48,11 @@ export default function Navbar() {
             </button>
           </div>
         ) : (
-          <Link href="/login">
+          <AppLink href="/login">
             <div className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
               ເຂົ້າສູ່ລະບົບ
             </div>
-          </Link>
+          </AppLink>
         )}
       </div>
     </header>

@@ -37,7 +37,7 @@ function DocumentsListContent() {
 
   useEffect(() => {
     fetchParcelData();
-  }, [currentPage, itemsPerPage, selectedProvince, selectedDistrict, selectedVillage]);
+  }, [currentPage, itemsPerPage]);
 
   const fetchParcelData = async () => {
     try {
