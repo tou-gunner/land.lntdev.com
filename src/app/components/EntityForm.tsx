@@ -75,10 +75,10 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
       // Format the entity data according to the API requirements
       const entityData = {
         name: owner.name || null,
-        entitytype: entityTypes.find(type => type.id === owner.entitytype)?.name || null,
+        entitytype: entityTypes.find(type => type.id == owner.entitytype)?.name || null,
         registrationno: owner.registrationno || null,
         registrationdate: owner.registrationdate || null,
-        businesstype: businessTypes.find(type => type.id === owner.businesstype)?.name || null,
+        businesstype: businessTypes.find(type => type.id == owner.businesstype)?.name || null,
         nationality: owner.nationality || null,
         houseno: owner.houseno || null,
         road: owner.road || null,
@@ -86,9 +86,9 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
         village: owner.village || null,
         district: owner.district || null,
         province: owner.province || null,
-        title: titles.find(title => title.id === owner.title)?.name || "",
+        title: titles.find(title => title.id == owner.title)?.name || "",
         gid: owner.gid || null,
-        government_workplace: ministries.find(ministry => ministry.id === owner.government_workplace)?.name || null,
+        government_workplace: ministries.find(ministry => ministry.id == owner.government_workplace)?.name || null,
         isstate: owner.isstate || null,
         companyname: owner.companyname || null
       };

@@ -17,12 +17,21 @@ function DocumentsListContent() {
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [totalItems, setTotalItems] = useState<number>(0);
   
   // Active tab state for switching between views
   const [activeTab, setActiveTab] = useState<TabType>('type');
+  
+  // State for parcels for each tab
+  const [typeParcels, setTypeParcels] = useState<Parcel[]>([]);
+  const [formParcels, setFormParcels] = useState<Parcel[]>([]);
+  const [typeTotalItems, setTypeTotalItems] = useState<number>(0);
+  const [formTotalItems, setFormTotalItems] = useState<number>(0);
+  
+  // Pagination states for each tab
+  const [typeCurrentPage, setTypeCurrentPage] = useState<number>(1);
+  const [formCurrentPage, setFormCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   
   // Search and filter states
   const [selectedProvince, setSelectedProvince] = useState<string>("");
@@ -42,35 +51,43 @@ function DocumentsListContent() {
   const currentUser = useMemo(() => getCurrentUser(), []);
 
   useEffect(() => {
-    fetchParcelData();
-  }, [currentPage, itemsPerPage, activeTab]);
+    fetchAllParcelData();
+  }, [typeCurrentPage, formCurrentPage, itemsPerPage, selectedProvince, selectedDistrict, selectedVillage]);
 
-  const fetchParcelData = async () => {
+  const fetchAllParcelData = async () => {
     try {
       setLoading(true);
       
-      // Use the fetchParcels function from api.ts
+      // Fetch data for both tabs
+      const typeResult = await fetchParcels({
+        currentPage: typeCurrentPage,
+        itemsPerPage,
+        selectedProvince,
+        selectedDistrict,
+        selectedVillage
+      });
+      
+      const formResult = await fetchParcelsForForm({
+        currentPage: formCurrentPage,
+        itemsPerPage,
+        selectedProvince,
+        selectedDistrict,
+        selectedVillage,
+        username: currentUser?.user_name,
+      });
+      
+      setTypeParcels(typeResult.parcels);
+      setFormParcels(formResult.parcels);
+      setTypeTotalItems(typeResult.totalItems);
+      setFormTotalItems(formResult.totalItems);
+      
+      // Set the current display based on active tab
       if (activeTab === 'type') {
-        const result = await fetchParcels({
-          currentPage,
-          itemsPerPage,
-          selectedProvince,
-          selectedDistrict,
-          selectedVillage
-        });
-        setParcels(result.parcels);
-        setTotalItems(result.totalItems);
+        setParcels(typeResult.parcels);
+        setTotalItems(typeResult.totalItems);
       } else {
-        const result = await fetchParcelsForForm({
-          currentPage,
-          itemsPerPage,
-          selectedProvince,
-          selectedDistrict,
-          selectedVillage,
-          username: currentUser?.user_name,
-        });
-        setParcels(result.parcels);
-        setTotalItems(result.totalItems);
+        setParcels(formResult.parcels);
+        setTotalItems(formResult.totalItems);
       }
       
       setLoading(false);
@@ -81,62 +98,85 @@ function DocumentsListContent() {
     }
   };
 
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+  };
+
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const province = e.target.value;
     setSelectedProvince(province);
     setSelectedDistrict("");
     setSelectedVillage("");
-    setCurrentPage(1);
+    setTypeCurrentPage(1);
+    setFormCurrentPage(1);
   };
 
   const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const district = e.target.value;
     setSelectedDistrict(district);
     setSelectedVillage("");
-    setCurrentPage(1);
+    setTypeCurrentPage(1);
+    setFormCurrentPage(1);
   };
 
   const handleVillageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedVillage(e.target.value);
-    setCurrentPage(1);
+    setTypeCurrentPage(1);
+    setFormCurrentPage(1);
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentPage(1);
-    fetchParcelData();
+    setTypeCurrentPage(1);
+    setFormCurrentPage(1);
+    fetchAllParcelData();
   };
 
   const handleReset = () => {
     setSelectedProvince("");
     setSelectedDistrict("");
     setSelectedVillage("");
-    setCurrentPage(1);
+    setTypeCurrentPage(1);
+    setFormCurrentPage(1);
+    fetchAllParcelData();
   };
 
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
+  const handleTypePageChange = (newPage: number) => {
+    setTypeCurrentPage(newPage);
+  };
+
+  const handleFormPageChange = (newPage: number) => {
+    setFormCurrentPage(newPage);
   };
 
   const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setItemsPerPage(Number(e.target.value));
-    setCurrentPage(1); // Reset to first page when changing items per page
-    fetchParcelData();
+    setTypeCurrentPage(1);
+    setFormCurrentPage(1);
+    fetchAllParcelData();
   };
 
-  const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
-    setCurrentPage(1); // Reset to first page when changing tabs
-  };
-
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const pageNumbers = Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-    if (totalPages <= 5) return i + 1;
+  // Calculate total pages for each tab
+  const typeTotalPages = Math.ceil(typeTotalItems / itemsPerPage);
+  const formTotalPages = Math.ceil(formTotalItems / itemsPerPage);
     
-    if (currentPage <= 3) return i + 1;
-    if (currentPage >= totalPages - 2) return totalPages - 4 + i;
+  // Calculate page numbers for each tab
+  const typePageNumbers = Array.from({ length: Math.min(5, typeTotalPages) }, (_, i) => {
+    if (typeTotalPages <= 5) return i + 1;
     
-    return currentPage - 2 + i;
+    if (typeCurrentPage <= 3) return i + 1;
+    if (typeCurrentPage >= typeTotalPages - 2) return typeTotalPages - 4 + i;
+    
+    return typeCurrentPage - 2 + i;
+  });
+  
+  const formPageNumbers = Array.from({ length: Math.min(5, formTotalPages) }, (_, i) => {
+    if (formTotalPages <= 5) return i + 1;
+    
+    if (formCurrentPage <= 3) return i + 1;
+    if (formCurrentPage >= formTotalPages - 2) return formTotalPages - 4 + i;
+    
+    return formCurrentPage - 2 + i;
   });
 
   return (
@@ -273,106 +313,219 @@ function DocumentsListContent() {
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ລະຫັດບາໂຄດ</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ບ້ານ</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ເມືອງ</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ແຂວງ</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ຜູ້ໃຊ້</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                {parcels.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                      {activeTab === 'type' 
-                        ? 'ບໍ່ພົບຂໍ້ມູນຕອນດິນສຳລັບຈັດກຸ່ມເອກະສານ' 
-                        : 'ບໍ່ພົບຂໍ້ມູນຕອນດິນສຳລັບປ້ອນຂໍ້ມູນ'}
-                    </td>
+          {/* Type Tab Content */}
+          <div className={`${activeTab === 'type' ? 'block' : 'hidden'}`}>
+            <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ລະຫັດບາໂຄດ</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ບ້ານ</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ເມືອງ</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ແຂວງ</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ຜູ້ໃຊ້</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"></th>
                   </tr>
-                ) : (
-                  parcels.map((parcel) => (
-                    <tr key={parcel.gid} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.barcode}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.village}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.district}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.province}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.userName || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-3">
-                          <Link
-                            href={activeTab === 'type' 
-                              ? `/document-types?parcel=${parcel.barcode}` 
-                              : `/document-forms?parcel=${parcel.barcode}`}
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                            title={activeTab === 'type' ? "ຈັດການເອກະສານຕອນດິນ" : "ປ້ອນຂໍ້ມູນຕອນດິນ"}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </Link>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                  {typeParcels.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                        ບໍ່ພົບຂໍ້ມູນຕອນດິນສຳລັບຈັດກຸ່ມເອກະສານ
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    typeParcels.map((parcel) => (
+                      <tr key={parcel.gid} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.barcode}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.village}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.district}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.province}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.userName || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-3">
+                            <Link
+                              href={`/document-types?parcel=${parcel.barcode}`}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                              title="ຈັດການເອກະສານຕອນດິນ"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {/* Type Tab Pagination */}
+            <div className="flex justify-between items-center mt-6">
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                ສະແດງ <span className="font-medium">
+                  {typeParcels.length > 0 ? (typeCurrentPage - 1) * itemsPerPage + 1 : 0}
+                </span> ຫາ <span className="font-medium">
+                  {Math.min(typeCurrentPage * itemsPerPage, typeTotalItems)}
+                </span> ຈາກທັງໝົດ <span className="font-medium">
+                  {typeTotalItems}
+                </span> ລາຍການ
+              </div>
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => handleTypePageChange(1)}
+                  disabled={typeCurrentPage === 1}
+                  className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ໜ້າທຳອິດ
+                </button>
+                <button
+                  onClick={() => handleTypePageChange(typeCurrentPage - 1)}
+                  disabled={typeCurrentPage === 1}
+                  className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  &larr;
+                </button>
+                
+                {typePageNumbers.map(page => (
+                  <button
+                    key={page}
+                    onClick={() => handleTypePageChange(page)}
+                    className={`px-3 py-1 rounded border text-sm font-medium ${
+                      typeCurrentPage === page
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => handleTypePageChange(typeCurrentPage + 1)}
+                  disabled={typeCurrentPage === typeTotalPages}
+                  className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  &rarr;
+                </button>
+                <button
+                  onClick={() => handleTypePageChange(typeTotalPages)}
+                  disabled={typeCurrentPage === typeTotalPages}
+                  className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ໜ້າສຸດທ້າຍ
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Pagination */}
-          <div className="flex justify-between items-center mt-6">
-            <div className="text-sm text-gray-700 dark:text-gray-300">
-              ສະແດງ <span className="font-medium">{parcels.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> ຫາ <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> ຈາກທັງໝົດ <span className="font-medium">{totalItems}</span> ລາຍການ
+          {/* Form Tab Content */}
+          <div className={`${activeTab === 'form' ? 'block' : 'hidden'}`}>
+            <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ລະຫັດບາໂຄດ</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ບ້ານ</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ເມືອງ</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ແຂວງ</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ຜູ້ໃຊ້</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                  {formParcels.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                        ບໍ່ພົບຂໍ້ມູນຕອນດິນສຳລັບປ້ອນຂໍ້ມູນ
+                      </td>
+                    </tr>
+                  ) : (
+                    formParcels.map((parcel) => (
+                      <tr key={parcel.gid} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.barcode}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.village}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.district}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.province}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.userName || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-3">
+                            <Link
+                              href={`/document-forms?parcel=${parcel.barcode}`}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                              title="ປ້ອນຂໍ້ມູນຕອນດິນ"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-            <div className="flex space-x-1">
-              <button
-                onClick={() => handlePageChange(1)}
-                disabled={currentPage === 1}
-                className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                ໜ້າທຳອິດ
-              </button>
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                &larr;
-              </button>
-              
-              {pageNumbers.map(page => (
+            
+            {/* Form Tab Pagination */}
+            <div className="flex justify-between items-center mt-6">
+              <div className="text-sm text-gray-700 dark:text-gray-300">
+                ສະແດງ <span className="font-medium">
+                  {formParcels.length > 0 ? (formCurrentPage - 1) * itemsPerPage + 1 : 0}
+                </span> ຫາ <span className="font-medium">
+                  {Math.min(formCurrentPage * itemsPerPage, formTotalItems)}
+                </span> ຈາກທັງໝົດ <span className="font-medium">
+                  {formTotalItems}
+                </span> ລາຍການ
+              </div>
+              <div className="flex space-x-1">
                 <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`px-3 py-1 rounded border text-sm font-medium ${
-                    currentPage === page
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-                  }`}
+                  onClick={() => handleFormPageChange(1)}
+                  disabled={formCurrentPage === 1}
+                  className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {page}
+                  ໜ້າທຳອິດ
                 </button>
-              ))}
-              
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                &rarr;
-              </button>
-              <button
-                onClick={() => handlePageChange(totalPages)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                ໜ້າສຸດທ້າຍ
-              </button>
+                <button
+                  onClick={() => handleFormPageChange(formCurrentPage - 1)}
+                  disabled={formCurrentPage === 1}
+                  className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  &larr;
+                </button>
+                
+                {formPageNumbers.map(page => (
+                  <button
+                    key={page}
+                    onClick={() => handleFormPageChange(page)}
+                    className={`px-3 py-1 rounded border text-sm font-medium ${
+                      formCurrentPage === page
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => handleFormPageChange(formCurrentPage + 1)}
+                  disabled={formCurrentPage === formTotalPages}
+                  className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  &rarr;
+                </button>
+                <button
+                  onClick={() => handleFormPageChange(formTotalPages)}
+                  disabled={formCurrentPage === formTotalPages}
+                  className="px-3 py-1 rounded border border-gray-300 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ໜ້າສຸດທ້າຍ
+                </button>
+              </div>
             </div>
           </div>
         </>

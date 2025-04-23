@@ -60,7 +60,7 @@ export interface DocTypeOption {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || '' 
+    baseUrl: '/api' 
   }),
   tagTypes: ['Land', 'Person', 'Entity', 'LandRight'],
   endpoints: (builder) => ({

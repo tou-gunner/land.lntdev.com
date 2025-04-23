@@ -15,8 +15,8 @@ function DocumentFormsContent() {
   const [activeTab, setActiveTab] = useState<'land' | 'ownership'>('land');
   const searchParams = useSearchParams();
   const parcelParam = searchParams.get('parcel');
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-  const pdfUrl = `${apiBaseUrl}/parcel/pdf?parcel=${parcelParam}`;
+  const apiBaseUrl = '/api';
+  const pdfUrl = `${apiBaseUrl}/parcels/pdf?parcel=${parcelParam}`;
   const [splitLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const [message, setMessage] = useState<string>("");
   

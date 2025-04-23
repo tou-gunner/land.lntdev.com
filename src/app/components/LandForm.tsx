@@ -141,6 +141,10 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
                 sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
               } else if (landRightKey === 'date_public_display') {
                 sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
+              } else if (landRightKey === 'valid_from') {
+                sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
+              } else if (landRightKey === 'valid_till') {
+                sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
               } else {
                 sanitizedLandRightData[landRightKey] = landRightValue;
               }
@@ -338,12 +342,12 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
         "parcelno": formData.parcelno,
         "cadastremapno": formData.cadastremapno,
         "landusetype": formData.landusetype ? parseInt(formData.landusetype) : null,
-        "landusezone": landZones.find(zone => zone.id === formData.landusezone)?.name || null,
-        "road": roadTypes.find(type => type.id === formData.roadtype)?.name || null,
+        "landusezone": landZones.find(zone => zone.id == formData.landusezone)?.name || null,
+        "road": roadTypes.find(type => type.id == formData.roadtype)?.name || null,
         "unit": formData.unit || null,
-        "village": villages.find(village => village.id === formData.village)?.name || null,
-        "district": districts.find(district => district.id === formData.district)?.name || null,
-        "province": provinces.find(province => province.id === formData.province)?.name || null,
+        "village": villages.find(village => village.id == formData.village)?.name || null,
+        "district": districts.find(district => district.id == formData.district)?.name || null,
+        "province": provinces.find(province => province.id == formData.province)?.name || null,
         "purpose": formData.purpose || null,
         "additionalstatements": formData.additionalstatements || null,
         "status": formData.status || null,

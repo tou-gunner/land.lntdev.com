@@ -14,6 +14,15 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
+  // Configure API routes
+  rewrites: async () => {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*', // Next.js API routes
+      }
+    ];
+  },
 };
 
 export default nextConfig;

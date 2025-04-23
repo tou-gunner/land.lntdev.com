@@ -58,7 +58,7 @@ export interface Parcel {
   userName?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = "/api";
 
 // Helper function to transform API items to the format needed by dropdowns
 function transformApiItems(items: ApiItem[]): TransformedItem[] {
@@ -89,7 +89,7 @@ export async function fetchParcels(params: {
     } = params;
     
     // Choose the endpoint based on the useInputEndpoint flag
-    const endpoint = "/parcel/list_parcels_filter";
+    const endpoint = "/parcels";
     
     // Construct the query URL with filters
     let url = `${API_BASE_URL}${endpoint}?page_no=${currentPage}&offset=${itemsPerPage}`;
@@ -165,7 +165,7 @@ export async function fetchParcelsForForm(params: {
     } = params;
     
     // Choose the endpoint based on the useInputEndpoint flag
-    const endpoint = "/parcel/list_parcels_filter_input";
+    const endpoint = "/parcels/input";
     
     // Construct the query URL with filters
     let url = `${API_BASE_URL}${endpoint}?page_no=${currentPage}&offset=${itemsPerPage}`;
@@ -230,7 +230,7 @@ export async function fetchParcelsForForm(params: {
 // Document type management functions
 export async function updateDocumentTypes(docTypes: DocTypeRequest[]) {
   try {
-    const response = await fetch(`${API_BASE_URL}/parcel/pdf/update_document_type`, {
+    const response = await fetch(`${API_BASE_URL}/parcels/document-types`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -254,7 +254,7 @@ export async function updateDocumentTypes(docTypes: DocTypeRequest[]) {
 export async function fetchPdfInfo(parcelId: string) {
   try {
     const apiBaseUrl = API_BASE_URL || '';
-    const pdfUrl = `${apiBaseUrl}/parcel/pdf?parcel=${parcelId}`;
+    const pdfUrl = `${apiBaseUrl}/parcels/pdf?parcel=${parcelId}`;
     
     const response = await fetch(pdfUrl);
     
@@ -272,7 +272,7 @@ export async function fetchPdfInfo(parcelId: string) {
 // Function to lock a parcel record for a user
 export async function lockParcelRecord(username: string, parcelId: string) {
   try {
-    const url = `${API_BASE_URL}/parcel/user_lock_record`;
+    const url = `${API_BASE_URL}/parcels/lock`;
     
     const response = await fetch(url, {
       method: 'POST',
