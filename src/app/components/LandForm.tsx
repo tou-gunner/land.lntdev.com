@@ -62,11 +62,11 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
   
   // Location data
   const { data: provinces = [], isLoading: provincesLoading } = useGetProvincesQuery();
-  const { data: districts = [], isLoading: districtsLoading } = useGetDistrictsQuery(formData.province, {
-    skip: !formData.province
+  const { data: districts = [], isLoading: districtsLoading } = useGetDistrictsQuery(formData.provincecode, {
+    skip: !formData.provincecode
   });
-  const { data: villages = [], isLoading: villagesLoading } = useGetVillagesQuery(formData.district, {
-    skip: !formData.district
+  const { data: villages = [], isLoading: villagesLoading } = useGetVillagesQuery(formData.districtcode, {
+    skip: !formData.districtcode
   });
   
   // Only run the search query when triggered
@@ -191,7 +191,15 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
         sanitizedData = {...sanitizedData, landrights: sanitizedLandRights};
       }
     });
+    
+    if (parcelData.villagecode && parcelData.villagecode.length === 7) {
+      const villagecode = parcelData.villagecode;
+      const provincecode = parcelData.villagecode.substring(0, 2);
+      const districtcode = parcelData.villagecode.substring(0, 4);
+      sanitizedData = {...sanitizedData, provincecode, districtcode, villagecode};
+    }
     console.log(sanitizedData);
+
     // Update the form data with the processed data
     updateFormData({...sanitizedData});
     
@@ -260,46 +268,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
 
   // Extract and set location values from villagecode if available
   useEffect(() => {
-    if (formData.villagecode) {
-      const villageCode = formData.villagecode.toString();
-      // Extract province code from first 2 characters
-      if (villageCode.length >= 2) {
-        const provinceCode = villageCode.substring(0, 2);
-        // Only update if different to avoid infinite loops
-        if (formData.province !== provinceCode) {
-          updateFormData({
-            ...formData,
-            province: provinceCode,
-            // Clear district and village to avoid invalid states
-            district: "",
-            village: ""
-          });
-        }
-      }
-      
-      // Extract district code from first 4 characters
-      if (villageCode.length >= 4 && formData.province) {
-        const districtCode = villageCode.substring(0, 4);
-        // Only update if different to avoid infinite loops
-        if (formData.district !== districtCode) {
-          updateFormData({
-            ...formData,
-            district: districtCode,
-            // Clear village to avoid invalid states
-            village: ""
-          });
-        }
-      }
-      
-      // Set the village code if province and district are already set
-      if (formData.province && formData.district && formData.village !== villageCode) {
-        updateFormData({
-          ...formData,
-          village: villageCode
-        });
-      }
-    }
-  }, [formData.villagecode, formData.province, formData.district, formData.village, updateFormData]);
+  }, [formData.villagecode, formData.provincecode, formData.districtcode, updateFormData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -308,13 +277,13 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
     const updatedFormData = { ...formData };
     
     // Handle cascading selection for location fields
-    if (name === "province") {
+    if (name === "provincecode") {
       updatedFormData[name] = value;
-      updatedFormData["district"] = "";
-      updatedFormData["village"] = "";
-    } else if (name === "district") {
+      updatedFormData["districtcode"] = "";
+      updatedFormData["villagecode"] = "";
+    } else if (name === "districtcode") {
       updatedFormData[name] = value;
-      updatedFormData["village"] = "";
+      updatedFormData["villagecode"] = "";
     } else if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
       updatedFormData[name] = checked;
@@ -708,13 +677,13 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
           <h3 className="text-xl font-bold mb-4 text-black dark:text-white">ທີ່ຢູ່:</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="form-group">
-              <label htmlFor="province" className="block mb-2 font-semibold text-black dark:text-white">
+              <label htmlFor="provincecode" className="block mb-2 font-semibold text-black dark:text-white">
                 ແຂວງ:
               </label>
               <select
-                id="province"
-                name="province"
-                value={formData.province}
+                id="provincecode"
+                name="provincecode"
+                value={formData.provincecode}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
                 disabled={provincesLoading}
@@ -733,16 +702,16 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             </div>
             
             <div className="form-group">
-              <label htmlFor="district" className="block mb-2 font-semibold text-black dark:text-white">
+              <label htmlFor="districtcode" className="block mb-2 font-semibold text-black dark:text-white">
                 ເມືອງ:
               </label>
               <select
-                id="district"
-                name="district"
-                value={formData.district}
+                id="districtcode"
+                name="districtcode"
+                value={formData.districtcode}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={districtsLoading || !formData.province}
+                disabled={districtsLoading || !formData.provincecode}
               >
                 <option value="">ເລືອກເມືອງ</option>
                 {districtsLoading ? (
@@ -758,16 +727,16 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             </div>
             
             <div className="form-group">
-              <label htmlFor="village" className="block mb-2 font-semibold text-black dark:text-white">
+              <label htmlFor="villagecode" className="block mb-2 font-semibold text-black dark:text-white">
                 ບ້ານ:
               </label>
               <select
-                id="village"
-                name="village"
-                value={formData.village}
+                id="villagecode"
+                name="villagecode"
+                value={formData.villagecode}
                 onChange={handleChange}
                 className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-                disabled={villagesLoading || !formData.district}
+                disabled={villagesLoading || !formData.districtcode}
               >
                 <option value="">ເລືອກບ້ານ</option>
                 {villagesLoading ? (

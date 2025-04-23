@@ -86,14 +86,10 @@ export async function fetchParcels(params: {
       selectedProvince, 
       selectedDistrict, 
       selectedVillage,
-      username,
-      useInputEndpoint
     } = params;
     
     // Choose the endpoint based on the useInputEndpoint flag
-    const endpoint = useInputEndpoint 
-      ? "/parcel/list_parcels_filter_input" 
-      : "/parcel/list_parcels_filter";
+    const endpoint = "/parcel/list_parcels_filter";
     
     // Construct the query URL with filters
     let url = `${API_BASE_URL}${endpoint}?page_no=${currentPage}&offset=${itemsPerPage}`;
@@ -102,8 +98,83 @@ export async function fetchParcels(params: {
     if (selectedDistrict) url += `&district=${selectedDistrict}`;
     if (selectedVillage) url += `&village=${selectedVillage}`;
     
-    // Add username parameter if needed for the input endpoint
-    if (useInputEndpoint && username) {
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error("Failed to fetch parcels");
+    }
+    
+    const data = await response.json();
+
+    // Transform the data structure to match our interface
+    const transformedParcels = data.data.map((item: ApiParcelItem) => {
+      const provinceName = item.province_code;
+      const districtName = item.district_code;
+      const villageName = item.village_code;
+      
+      return {
+        gid: item.parcel,
+        // Extract parcel number from the first part before underscore for parcelno
+        parcelno: item.parcel.split('_')[0],
+        // Use full parcel identifier as barcode for display
+        barcode: item.parcel,
+        // Use available data from Redux or API response
+        village: villageName,
+        district: districtName,
+        province: provinceName,
+        cadastremapno: item.file_name || 'N/A',
+        // Store original codes for filtering
+        villageCode: item.village_code,
+        districtCode: item.district_code,
+        provinceCode: item.province_code,
+        // Add userName from the API response
+        userName: item.user_name || ''
+      };
+    });
+    
+    // Return the parsed data and total items count
+    return {
+      parcels: transformedParcels,
+      totalItems: data.data?.[0]?.total_count || 0
+    };
+  } catch (error) {
+    console.error('Error fetching parcels:', error);
+    throw error;
+  }
+}
+
+// Fetch parcels with filtering
+export async function fetchParcelsForForm(params: {
+  currentPage: number;
+  itemsPerPage: number;
+  selectedProvince?: string;
+  selectedDistrict?: string;
+  selectedVillage?: string;
+  username?: string;
+  useInputEndpoint?: boolean;
+}): Promise<{ parcels: Parcel[], totalItems: number }> {
+  try {
+    const { 
+      currentPage, 
+      itemsPerPage, 
+      selectedProvince, 
+      selectedDistrict, 
+      selectedVillage,
+      username,
+      useInputEndpoint
+    } = params;
+    
+    // Choose the endpoint based on the useInputEndpoint flag
+    const endpoint = "/parcel/list_parcels_filter_input";
+    
+    // Construct the query URL with filters
+    let url = `${API_BASE_URL}${endpoint}?page_no=${currentPage}&offset=${itemsPerPage}`;
+    
+    if (selectedProvince) url += `&province=${selectedProvince}`;
+    if (selectedDistrict) url += `&district=${selectedDistrict}`;
+    if (selectedVillage) url += `&village=${selectedVillage}`;
+    
+    if (username) {
       url += `&user_name=${username}`;
     }
     
@@ -144,7 +215,7 @@ export async function fetchParcels(params: {
     // Return the parsed data and total items count
     return {
       parcels: transformedParcels,
-      totalItems: data.data?.[0]?.total_pages || 0
+      totalItems: data.data?.[0]?.total_count || 0
     };
   } catch (error) {
     console.error('Error fetching parcels:', error);

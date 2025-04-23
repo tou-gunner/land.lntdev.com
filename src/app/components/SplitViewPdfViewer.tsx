@@ -35,7 +35,7 @@ const SplitViewPdfViewer = forwardRef<SplitViewPdfViewerRef, SplitViewPdfViewerP
   children,
   defaultLayout = 'horizontal',
   defaultRatio = 0.5,
-  height = '600px',
+  height = 'calc(100vh-75px)',
   initialPage = 1,
   initialRotation = 0,
   onPageChange,
@@ -183,7 +183,7 @@ const SplitViewPdfViewer = forwardRef<SplitViewPdfViewerRef, SplitViewPdfViewerP
 
       {/* Split container */}
       <div 
-        className={`relative flex ${layout === 'horizontal' ? 'flex-row' : 'flex-col'} h-[calc(100%-40px)]`}
+        className={`relative flex ${layout === 'horizontal' ? 'flex-row' : 'flex-col'} h-[calc(100vh-75px)]`}
         onMouseMove={handleMouseMove}
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}

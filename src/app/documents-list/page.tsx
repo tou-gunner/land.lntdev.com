@@ -8,10 +8,10 @@ import { apiSlice } from "../redux/api/apiSlice";
 import { ReduxProvider } from "../redux/provider";
 import { getCurrentUser } from "../lib/auth";
 import { withAuth } from "../components/AuthProvider";
-import { fetchParcels, Parcel } from "../lib/api";
+import { fetchParcels, fetchParcelsForForm, Parcel } from "../lib/api";
 
 // Tab types for switching between view modes
-type TabType = 'all' | 'mine';
+type TabType = 'type' | 'form';
 
 function DocumentsListContent() {
   const [parcels, setParcels] = useState<Parcel[]>([]);
@@ -22,7 +22,7 @@ function DocumentsListContent() {
   const [totalItems, setTotalItems] = useState<number>(0);
   
   // Active tab state for switching between views
-  const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [activeTab, setActiveTab] = useState<TabType>('type');
   
   // Search and filter states
   const [selectedProvince, setSelectedProvince] = useState<string>("");
@@ -50,18 +50,29 @@ function DocumentsListContent() {
       setLoading(true);
       
       // Use the fetchParcels function from api.ts
-      const result = await fetchParcels({
-        currentPage,
-        itemsPerPage,
-        selectedProvince,
-        selectedDistrict,
-        selectedVillage,
-        username: currentUser?.user_name,
-        useInputEndpoint: activeTab === 'mine'
-      });
+      if (activeTab === 'type') {
+        const result = await fetchParcels({
+          currentPage,
+          itemsPerPage,
+          selectedProvince,
+          selectedDistrict,
+          selectedVillage
+        });
+        setParcels(result.parcels);
+        setTotalItems(result.totalItems);
+      } else {
+        const result = await fetchParcelsForForm({
+          currentPage,
+          itemsPerPage,
+          selectedProvince,
+          selectedDistrict,
+          selectedVillage,
+          username: currentUser?.user_name,
+        });
+        setParcels(result.parcels);
+        setTotalItems(result.totalItems);
+      }
       
-      setParcels(result.parcels);
-      setTotalItems(result.totalItems);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching parcels:", error);
@@ -110,6 +121,7 @@ function DocumentsListContent() {
   const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(1); // Reset to first page when changing items per page
+    fetchParcelData();
   };
 
   const handleTabChange = (tab: TabType) => {
@@ -152,9 +164,9 @@ function DocumentsListContent() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
-              onClick={() => handleTabChange('all')}
+              onClick={() => handleTabChange('type')}
               className={`${
-                activeTab === 'all'
+                activeTab === 'type'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
@@ -162,9 +174,9 @@ function DocumentsListContent() {
               ຈັດກຸ່ມເອກະສານ
             </button>
             <button
-              onClick={() => handleTabChange('mine')}
+              onClick={() => handleTabChange('form')}
               className={`${
-                activeTab === 'mine'
+                activeTab === 'form'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
@@ -277,7 +289,7 @@ function DocumentsListContent() {
                 {parcels.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                      {activeTab === 'all' 
+                      {activeTab === 'type' 
                         ? 'ບໍ່ພົບຂໍ້ມູນຕອນດິນສຳລັບຈັດກຸ່ມເອກະສານ' 
                         : 'ບໍ່ພົບຂໍ້ມູນຕອນດິນສຳລັບປ້ອນຂໍ້ມູນ'}
                     </td>
@@ -293,11 +305,11 @@ function DocumentsListContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-3">
                           <Link
-                            href={activeTab === 'all' 
+                            href={activeTab === 'type' 
                               ? `/document-types?parcel=${parcel.barcode}` 
                               : `/document-forms?parcel=${parcel.barcode}`}
                             className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                            title={activeTab === 'all' ? "ຈັດການເອກະສານຕອນດິນ" : "ປ້ອນຂໍ້ມູນຕອນດິນ"}
+                            title={activeTab === 'type' ? "ຈັດການເອກະສານຕອນດິນ" : "ປ້ອນຂໍ້ມູນຕອນດິນ"}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

@@ -23,7 +23,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <AuthProvider>
           <ThemeProvider defaultTheme="system" storageKey="land3-theme">
             {!isLoginPage && <Navbar />}
-            <main className="mx-auto pt-4 pb-12">{children}</main>
+            <main className="mx-auto">{children}</main>
             <ToastProvider />
           </ThemeProvider>
         </AuthProvider>

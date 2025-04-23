@@ -321,19 +321,15 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(({
         {useBuiltinPdfReader ? (
           <div className="relative w-full h-full">
             <iframe
+              onContextMenu={(e) => e.preventDefault()}
               ref={iframeRef}
               src={`${pdfUrl}#toolbar=0&navpanes=0&view=FitH`}
               className="w-full h-full border-0"
               title="PDF Document"
               style={{ 
-                userSelect: 'none'
+                userSelect: 'none',
+                overflow: 'auto'
               }}
-              sandbox="allow-same-origin allow-scripts allow-forms"
-            />
-            {/* Add overlay div to catch right-clicks */}
-            <div 
-              style={overlayStyles} 
-              onContextMenu={(e) => e.preventDefault()}
             />
           </div>
         ) : (

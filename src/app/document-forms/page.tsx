@@ -36,7 +36,6 @@ function DocumentFormsContent() {
           pdfUrl={pdfUrl}
           useBuiltinPdfReader={true}
           defaultLayout={splitLayout}
-          height="700px"
         >
           {/* Tabs */}
           <div className="flex border-b border-gray-300 mb-6 flex-wrap">
