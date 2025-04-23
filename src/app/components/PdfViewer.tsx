@@ -328,12 +328,7 @@ const PdfViewer = forwardRef<PdfViewerRef, PdfViewerProps>(({
               style={{ 
                 userSelect: 'none'
               }}
-              onLoad={() => {
-                // Attempt to disable right-click in the iframe content
-                if (iframeRef.current?.contentWindow?.document) {
-                  iframeRef.current.contentWindow.document.addEventListener('contextmenu', e => e.preventDefault());
-                }
-              }}
+              sandbox="allow-same-origin allow-scripts allow-forms"
             />
             {/* Add overlay div to catch right-clicks */}
             <div 

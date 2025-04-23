@@ -3,7 +3,8 @@
  */
 
 // Use the environment variable for base path, or empty string if not set
-export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
+// export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || '';
+export const BASE_PATH = '';
 
 /**
  * Creates a URL with the base path properly included

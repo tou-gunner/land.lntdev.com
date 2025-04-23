@@ -10,6 +10,9 @@ import { getCurrentUser } from "../lib/auth";
 import { withAuth } from "../components/AuthProvider";
 import { fetchParcels, Parcel } from "../lib/api";
 
+// Tab types for switching between view modes
+type TabType = 'all' | 'mine';
+
 function DocumentsListContent() {
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -17,6 +20,9 @@ function DocumentsListContent() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [totalItems, setTotalItems] = useState<number>(0);
+  
+  // Active tab state for switching between views
+  const [activeTab, setActiveTab] = useState<TabType>('all');
   
   // Search and filter states
   const [selectedProvince, setSelectedProvince] = useState<string>("");
@@ -37,7 +43,7 @@ function DocumentsListContent() {
 
   useEffect(() => {
     fetchParcelData();
-  }, [currentPage, itemsPerPage]);
+  }, [currentPage, itemsPerPage, activeTab]);
 
   const fetchParcelData = async () => {
     try {
@@ -49,7 +55,9 @@ function DocumentsListContent() {
         itemsPerPage,
         selectedProvince,
         selectedDistrict,
-        selectedVillage
+        selectedVillage,
+        username: currentUser?.user_name,
+        useInputEndpoint: activeTab === 'mine'
       });
       
       setParcels(result.parcels);
@@ -104,6 +112,11 @@ function DocumentsListContent() {
     setCurrentPage(1); // Reset to first page when changing items per page
   };
 
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setCurrentPage(1); // Reset to first page when changing tabs
+  };
+
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const pageNumbers = Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
     if (totalPages <= 5) return i + 1;
@@ -131,6 +144,34 @@ function DocumentsListContent() {
             <option value={50}>50</option>
             <option value={100}>100</option>
           </select>
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => handleTabChange('all')}
+              className={`${
+                activeTab === 'all'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              ຈັດກຸ່ມເອກະສານ
+            </button>
+            <button
+              onClick={() => handleTabChange('mine')}
+              className={`${
+                activeTab === 'mine'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              ປ້ອນຂໍ້ມູນ
+            </button>
+          </nav>
         </div>
       </div>
 
@@ -228,14 +269,17 @@ function DocumentsListContent() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ບ້ານ</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ເມືອງ</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ແຂວງ</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ຜູ້ໃຊ້</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
                 {parcels.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                      ບໍ່ພົບຂໍ້ມູນຕອນດິນ
+                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                      {activeTab === 'all' 
+                        ? 'ບໍ່ພົບຂໍ້ມູນຕອນດິນສຳລັບຈັດກຸ່ມເອກະສານ' 
+                        : 'ບໍ່ພົບຂໍ້ມູນຕອນດິນສຳລັບປ້ອນຂໍ້ມູນ'}
                     </td>
                   </tr>
                 ) : (
@@ -245,12 +289,15 @@ function DocumentsListContent() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.village}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.district}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.province}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{parcel.userName || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-3">
                           <Link
-                            href={`/document-types?parcel=${parcel.barcode}`}
+                            href={activeTab === 'all' 
+                              ? `/document-types?parcel=${parcel.barcode}` 
+                              : `/document-forms?parcel=${parcel.barcode}`}
                             className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                            title="ຈັດການເອກະສານຕອນດິນ"
+                            title={activeTab === 'all' ? "ຈັດການເອກະສານຕອນດິນ" : "ປ້ອນຂໍ້ມູນຕອນດິນ"}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

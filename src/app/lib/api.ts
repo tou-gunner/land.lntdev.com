@@ -55,6 +55,7 @@ export interface Parcel {
   villageCode?: string;
   districtCode?: string;
   provinceCode?: string;
+  userName?: string;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -75,16 +76,36 @@ export async function fetchParcels(params: {
   selectedProvince?: string;
   selectedDistrict?: string;
   selectedVillage?: string;
+  username?: string;
+  useInputEndpoint?: boolean;
 }): Promise<{ parcels: Parcel[], totalItems: number }> {
   try {
-    const { currentPage, itemsPerPage, selectedProvince, selectedDistrict, selectedVillage } = params;
+    const { 
+      currentPage, 
+      itemsPerPage, 
+      selectedProvince, 
+      selectedDistrict, 
+      selectedVillage,
+      username,
+      useInputEndpoint
+    } = params;
+    
+    // Choose the endpoint based on the useInputEndpoint flag
+    const endpoint = useInputEndpoint 
+      ? "/parcel/list_parcels_filter_input" 
+      : "/parcel/list_parcels_filter";
     
     // Construct the query URL with filters
-    let url = `${API_BASE_URL}/parcel/list_parcels_filter?page_no=${currentPage}&offset=${itemsPerPage}`;
+    let url = `${API_BASE_URL}${endpoint}?page_no=${currentPage}&offset=${itemsPerPage}`;
     
     if (selectedProvince) url += `&province=${selectedProvince}`;
     if (selectedDistrict) url += `&district=${selectedDistrict}`;
     if (selectedVillage) url += `&village=${selectedVillage}`;
+    
+    // Add username parameter if needed for the input endpoint
+    if (useInputEndpoint && username) {
+      url += `&user_name=${username}`;
+    }
     
     const response = await fetch(url);
     
@@ -114,7 +135,9 @@ export async function fetchParcels(params: {
         // Store original codes for filtering
         villageCode: item.village_code,
         districtCode: item.district_code,
-        provinceCode: item.province_code
+        provinceCode: item.province_code,
+        // Add userName from the API response
+        userName: item.user_name || ''
       };
     });
     
