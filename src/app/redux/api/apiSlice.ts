@@ -14,7 +14,7 @@ interface ApiItem {
   [key: string]: any;
 }
 
-interface TransformedItem {
+export interface TransformedItem {
   id: number | string;
   name: string;
   englishName?: string;
@@ -275,6 +275,31 @@ export const apiSlice = createApi({
       }
     }),
 
+    // Urbanization
+    getUrbanization: builder.query<TransformedItem[], void>({
+      query: () => '/utility/urbanization',
+      transformResponse: (response: ApiResponse<ApiItem[]>) => {
+        if (response?.success && Array.isArray(response.data)) {
+          return response.data.map(item => ({
+            id: item.id,
+            name: item.description_lao || item.name || '',
+            englishName: item.description_english || ''
+          }));
+        }
+        return [];
+      }
+    }),
+
+    // Save Person
+    savePerson: builder.mutation<any, any>({
+      query: (personData) => ({
+        url: '/owner/save_person',
+        method: 'POST',
+        body: personData,
+      }),
+      invalidatesTags: ['Person']
+    }),
+
     // Save Entity
     saveEntity: builder.mutation<any, any>({
       query: (entityData) => ({
@@ -323,6 +348,7 @@ export const {
   useGetProvincesQuery,
   useGetDistrictsQuery,
   useGetVillagesQuery,
+  useGetUrbanizationQuery,
   useGetLandUseZonesQuery,
   useGetLandUseTypesQuery,
   useGetRoadTypesQuery,
@@ -336,6 +362,7 @@ export const {
   useSearchLandParcelQuery,
   useSaveParcelMutation,
   useSaveEntityMutation,
+  useSavePersonMutation,
   useSaveLandRightsMutation,
   useGetParcelInfoQuery,
   useGetDocumentTypesQuery

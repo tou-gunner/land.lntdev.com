@@ -1,36 +1,28 @@
 "use client";
 
 import { useState, forwardRef, useImperativeHandle, useEffect } from "react";
-import { useFormContext } from "../contexts/FormContext";
+import { emptyFormData, useFormContext } from "../contexts/FormContext";
 import { 
   useGetLandUseZonesQuery, 
   useGetLandUseTypesQuery, 
   useGetRoadTypesQuery, 
   useGetDisputeTypesQuery,
-  useSearchLandParcelQuery,
   useSaveParcelMutation,
   useGetProvincesQuery,
-  useGetDistrictsQuery,
-  useGetVillagesQuery,
-  useGetParcelInfoQuery,
   useGetEntityTypesQuery,
   useGetBusinessTypesQuery,
   useGetMinistriesQuery,
   useGetTitlesQuery,
   useGetRightTypesQuery,
-  useGetLandTitleHistoryQuery
+  useGetLandTitleHistoryQuery,
+  useGetUrbanizationQuery
 } from "../redux/api/apiSlice";
-import { toast } from "react-hot-toast";
 import { useToast } from "../hooks/useToast";
-
-interface ZoneItem {
-  id: string | number;
-  name: string;
-  englishName?: string;
-}
+import { fetchDistricts, fetchVillages } from "../redux/utils/queryUtils";
+import { searchLandParcel } from "../lib/api";
 
 const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
-  const { formData, updateFormData } = useFormContext();
+  const { formData, updateFormData, processParcelData } = useFormContext();
   const { showToast } = useToast();
 
   const [searchData, setSearchData] = useState({
@@ -38,10 +30,18 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
     parcelno: ""
   });
 
-  const [searchTrigger, setSearchTrigger] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   
   // Add loading state for reference data
   const [isReferenceDataLoading, setIsReferenceDataLoading] = useState(false);
+  const [districtsLoading, setDistrictsLoading] = useState(false);
+  const [villagesLoading, setVillagesLoading] = useState(false);
+
+
+  // Location data
+  const { data: provinces = [], isLoading: provincesLoading } = useGetProvincesQuery();
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [villages, setVillages] = useState<any[]>([]);
   
   // Use RTK Query hooks for data fetching
   const { data: landZones = [], isLoading: zonesLoading } = useGetLandUseZonesQuery();
@@ -50,6 +50,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
   const { data: rightTypes = [], isLoading: rightTypesLoading } = useGetRightTypesQuery();
   const { data: historyTypes = [], isLoading: historyTypesLoading } = useGetLandTitleHistoryQuery();
   const { data: disputeTypes = [], isLoading: disputeTypesLoading } = useGetDisputeTypesQuery();
+  const { data: urbanization = [], isLoading: urbanizationLoading } = useGetUrbanizationQuery();
   
   // Add additional queries from FormContext
   const { data: entityTypes = [], isLoading: entityTypesLoading } = useGetEntityTypesQuery();
@@ -59,212 +60,6 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
   
   // Add save parcel mutation
   const [saveParcel, { isLoading: isSaving }] = useSaveParcelMutation();
-  
-  // Location data
-  const { data: provinces = [], isLoading: provincesLoading } = useGetProvincesQuery();
-  const { data: districts = [], isLoading: districtsLoading } = useGetDistrictsQuery(formData.provincecode, {
-    skip: !formData.provincecode
-  });
-  const { data: villages = [], isLoading: villagesLoading } = useGetVillagesQuery(formData.districtcode, {
-    skip: !formData.districtcode
-  });
-  
-  // Only run the search query when triggered
-  const { 
-    data: parcelInfoResult,
-    isFetching: fetchingParcelInfo,
-    error: parcelInfoError
-  } = useGetParcelInfoQuery(
-    { parcelno: searchData.parcelno, mapno: searchData.cadastremapno },
-    { skip: !searchTrigger }
-  );
-
-  // Update form data when parcel info results arrive
-  const hasParcelInfo = parcelInfoResult?.success && Array.isArray(parcelInfoResult.data) && parcelInfoResult.data.length > 0;
-  
-  // Process parcel data with direct access to all required data
-  const processParcelData = (parcelData: any) => {
-    // Create sanitized data with null values converted to appropriate defaults
-    let sanitizedData: any = {};
-    
-    // Process each field in the new data
-    Object.entries(parcelData).forEach(([key, value]) => {
-      if (value === null) {
-        // Handle null values based on field type
-        if (typeof value === 'number') {
-          sanitizedData[key] = 0;
-        } else if (typeof value === 'boolean') {
-          sanitizedData[key] = false;
-        } else {
-          sanitizedData[key] = '';
-        }
-      } else {
-        if (key === 'landusezone') {
-          sanitizedData[key] = landZones.find(zone => zone.id === value)?.name || "";
-        } else {
-          sanitizedData[key] = value;
-        }
-      }
-
-      // Process land rights
-      if (key === 'landrights') {
-        let sanitizedLandRights: Array<any> = [];
-        
-        if (Array.isArray(value)) {
-          for (const [index, landRight] of (value as Array<any>).entries()) {
-            const sanitizedLandRightData: any = {};
-            
-            // Process each field in the land right
-            Object.entries(landRight).forEach(([landRightKey, landRightValue]) => {
-              if (landRightValue === null) {
-                // Handle null values based on field type
-                if (typeof landRightValue === 'number') {
-                  sanitizedLandRightData[landRightKey] = 0;
-                } else if (typeof landRightValue === 'boolean') {
-                  sanitizedLandRightData[landRightKey] = false;
-                } else {
-                  sanitizedLandRightData[landRightKey] = '';
-                }
-              } else if (landRightKey === 'righttype' ) {
-                sanitizedLandRightData[landRightKey] = rightTypes.find(type => type.name === landRightValue)?.id || "";
-              } else if (landRightKey === 'landrightcategory') {
-                sanitizedLandRightData[landRightKey] = landUseTypes.find(type => type.name === landRightValue)?.id || "";
-              } else if (landRightKey === 'history') {
-                sanitizedLandRightData[landRightKey] = historyTypes.find(type => type.name === landRightValue)?.id || "";
-              } else if (landRightKey === 'date_title_issued') {
-                sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
-              } else if (landRightKey === 'date_title_send_to_ponre') {
-                sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
-              } else if (landRightKey === 'date_conclusion') {
-                sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
-              } else if (landRightKey === 'date_title_printed') {
-                sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
-              } else if (landRightKey === 'date_public_display') {
-                sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
-              } else if (landRightKey === 'valid_from') {
-                sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
-              } else if (landRightKey === 'valid_till') {
-                sanitizedLandRightData[landRightKey] = new Date(landRightValue as string).toISOString().split('T')[0];
-              } else {
-                sanitizedLandRightData[landRightKey] = landRightValue;
-              }
-
-              // Process owner data if present
-              if (landRightKey === 'owner' && landRightValue) {
-                let sanitizedOwnerData: any = {};
-                
-                // Process each field in the owner data
-                Object.entries(landRightValue).forEach(([ownerKey, ownerValue]) => {
-                  if (ownerValue === null) {
-                    // Handle null values based on field type
-                    if (typeof ownerValue === 'number') {
-                      sanitizedOwnerData[ownerKey] = 0;
-                    } else if (typeof ownerValue === 'boolean') {
-                      sanitizedOwnerData[ownerKey] = false;
-                    } else {
-                      sanitizedOwnerData[ownerKey] = '';
-                    }
-                  } else {
-                    if (ownerKey === 'entitytype') {
-                      sanitizedOwnerData[ownerKey] = entityTypes.find(type => type.name === ownerValue)?.id || "";
-                    } else if (ownerKey === 'title') {
-                      sanitizedOwnerData[ownerKey] = titles.find(title => title.name === ownerValue)?.id || "";
-                    } else if (ownerKey === 'registrationdate') {
-                      sanitizedOwnerData[ownerKey] = new Date(ownerValue as string).toISOString().split('T')[0];
-                    } else if (ownerKey === 'businesstype') {
-                      sanitizedOwnerData[ownerKey] = businessTypes.find(type => type.name === ownerValue)?.id || "";
-                    } else if (ownerKey === 'government_workplace') {
-                      sanitizedOwnerData[ownerKey] = ministries.find(ministry => ministry.name === ownerValue)?.id || "";
-                    } else {
-                      sanitizedOwnerData[ownerKey] = ownerValue;
-                    }
-                  }
-                });
-                
-                // Update the land right with the processed owner data
-                sanitizedLandRightData[landRightKey] = {...landRightValue, ...sanitizedOwnerData};
-              }
-            });
-            
-            // Add the processed land right to the array
-            sanitizedLandRights[index] = {...landRight, ...sanitizedLandRightData};
-          }
-        }
-        
-        // Update the sanitized data with the processed land rights
-        sanitizedData = {...sanitizedData, landrights: sanitizedLandRights};
-      }
-    });
-    
-    if (parcelData.villagecode && parcelData.villagecode.length === 7) {
-      const villagecode = parcelData.villagecode;
-      const provincecode = parcelData.villagecode.substring(0, 2);
-      const districtcode = parcelData.villagecode.substring(0, 4);
-      sanitizedData = {...sanitizedData, provincecode, districtcode, villagecode};
-    }
-    console.log(sanitizedData);
-
-    // Update the form data with the processed data
-    updateFormData({...sanitizedData});
-    
-    return true;
-  };
-
-  // Update useEffect to handle data loading before processing
-  useEffect(() => {
-    // Update form with parcel info results when available
-    if (hasParcelInfo && searchTrigger) {
-      const parcelData = parcelInfoResult.data[0];
-
-      // Check if all required reference data is loaded
-      const isLoading = zonesLoading || entityTypesLoading || businessTypesLoading || 
-          ministriesLoading || titlesLoading;
-      
-      setIsReferenceDataLoading(isLoading);
-
-      if (!isLoading) {
-        // Process the data directly
-        processParcelData(parcelData);
-        console.log('Loaded land data with barcode:', parcelData.barcode);
-      } else {
-        // Data is still loading, set a timeout to retry
-        console.log('Waiting for reference data to load...');
-        
-        // Set a retry mechanism with setTimeout
-        const timer = setTimeout(() => {
-          // This will re-trigger the effect when the timeout completes
-          // as long as the search is still active
-          if (searchTrigger) {
-            console.log('Retrying data load...');
-            // Re-render to check if data is ready now
-            setIsReferenceDataLoading(zonesLoading || entityTypesLoading || 
-                businessTypesLoading || ministriesLoading || titlesLoading);
-          }
-        }, 1000);
-        
-        // Clear the timeout if the component unmounts or the effect re-runs
-        return () => clearTimeout(timer);
-      }
-      
-      // Reset search trigger if done loading
-      if (!isLoading) {
-        setTimeout(() => {
-          setSearchTrigger(false);
-        }, 0);
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    hasParcelInfo, 
-    searchTrigger, 
-    parcelInfoResult?.data,
-    zonesLoading,
-    entityTypesLoading,
-    businessTypesLoading,
-    ministriesLoading,
-    titlesLoading,
-    isReferenceDataLoading
-  ]);
 
   useImperativeHandle(ref, () => ({
     formData
@@ -272,6 +67,29 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
 
   // Extract and set location values from villagecode if available
   useEffect(() => {
+    if (!formData.provincecode) {
+      return;
+    }
+    new Promise(async (resolve, reject) => {
+      setDistrictsLoading(true);
+      setVillagesLoading(true);
+      try { 
+        let newDistricts: any[] = [];
+        let newVillages: any[] = [];
+        newDistricts = await fetchDistricts(formData.provincecode);
+        if (formData.districtcode) {
+          newVillages = await fetchVillages(formData.districtcode);
+        }
+        resolve({ newDistricts, newVillages });
+      } catch (error) {
+        reject(error);
+      }
+    }).then(({ newDistricts, newVillages }: any) => {
+      setDistricts(newDistricts);
+      setVillages(newVillages);
+      setDistrictsLoading(false);
+      setVillagesLoading(false);
+    });
   }, [formData.villagecode, formData.provincecode, formData.districtcode, updateFormData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -313,25 +131,29 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
       return;
     }
     
-    // Trigger the search query
-    setSearchTrigger(true);
+    setIsSearching(true);
     showToast.loading("ກຳລັງຄົ້ນຫາຂໍ້ມູນ...", "search-toast");
-  };
-
-  // Add useEffect to show toast for search results
-  useEffect(() => {
-    if (searchTrigger && !fetchingParcelInfo) {
-      if (parcelInfoError) {
-        showToast.error(parcelInfoError.toString(), "search-toast");
-      } else if (isReferenceDataLoading) {
-        showToast.loading("ກຳລັງໂຫຼດຂໍ້ມູນອ້າງອີງ...", "search-toast");
-      } else if (hasParcelInfo) {
-        showToast.success("ພົບຂໍ້ມູນແລ້ວ!", "search-toast");
-      } else if (parcelInfoResult && !parcelInfoResult.success) {
-        showToast.error("ບໍ່ພົບຂໍ້ມູນຕອນດິນ", "search-toast");
+    new Promise(async (resolve, reject) => {
+      try {
+        const result = await searchLandParcel(searchData.cadastremapno, searchData.parcelno);
+        resolve(result);
+      } catch (error) {
+        reject(error);
       }
-    }
-  }, [searchTrigger, fetchingParcelInfo, parcelInfoError, isReferenceDataLoading, hasParcelInfo, parcelInfoResult]);
+    }).then((result: any) => {
+      setIsSearching(false);
+      if (result.success) {
+        processParcelData(result.data[0]);
+        showToast.success("ພົບຂໍ້ມູນແລ້ວ!", "search-toast");
+      } else {
+        updateFormData(emptyFormData);
+        showToast.error(result.message || "ບໍ່ພົບຂໍ້ມູນຕອນດິນ", "search-toast");
+      }
+    }).catch((error: any) => {
+      setIsSearching(false);
+      showToast.error(error.message || "ເກີດຂໍ້ຜິດພາດໃນການຄົ້ນຫາ", "search-toast");
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -341,9 +163,8 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
       const formattedData = {
         "parcelno": formData.parcelno,
         "cadastremapno": formData.cadastremapno,
-        "landusetype": formData.landusetype ? parseInt(formData.landusetype) : null,
-        "landusezone": landZones.find(zone => zone.id == formData.landusezone)?.name || null,
-        "road": roadTypes.find(type => type.id == formData.roadtype)?.name || null,
+        "landusetype": formData.landusetype ? `${formData.landusetype}` : null,
+        "landusezone": formData.landusezone ? `${formData.landusezone}` : null,
         "unit": formData.unit || null,
         "village": villages.find(village => village.id == formData.village)?.name || null,
         "district": districts.find(district => district.id == formData.district)?.name || null,
@@ -353,13 +174,14 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
         "status": formData.status || null,
         "area": formData.area || null,
         "villagecode": formData.villagecode || null,
-        "isstate": formData.isstate || false,
+        "isstate": formData.isstate === null ? null : `${formData.isstate}`,
         "owner_check": formData.owner_check || null,
         "cadastremapno_old": formData.cadastremapno_old || null,
         "gid": formData.gid,
-        "urbanizationlevel": formData.urbanizationlevel || null,
+        "urbanizationlevel": formData.urbanizationlevel ? `${formData.urbanizationlevel}` : null,
         "landvaluezone_number": formData.landvaluezone_number || null,
-        "roadtype": formData.roadtype || null,
+        "roadtype": formData.roadtype ? `${formData.roadtype}` : null,
+        "road": formData.road || null,
         "parcelno_old": formData.parcelno_old || null,
         "barcode": formData.barcode || null,
         "exists_llr": formData.exists_llr,
@@ -436,17 +258,17 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <button 
               type="button" 
               onClick={handleSearch}
-              disabled={fetchingParcelInfo || isReferenceDataLoading}
+              disabled={isSearching || isReferenceDataLoading}
               className="bg-blue-800 hover:bg-blue-900 text-white p-2 rounded shadow-sm w-full h-10"
             >
-              {fetchingParcelInfo ? "ກຳລັງຄົ້ນຫາ..." : 
+              {isSearching ? "ກຳລັງຄົ້ນຫາ..." : 
                isReferenceDataLoading ? "ກຳລັງໂຫຼດຂໍ້ມູນ..." : "ຄົ້ນຫາ"}
             </button>
           </div>
         </div>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {formData.gid && <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="form-group">
             <label htmlFor="parcelno_old" className="block mb-2 font-semibold text-black dark:text-white">
@@ -530,14 +352,25 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             <label htmlFor="urbanizationlevel" className="block mb-2 font-semibold text-black dark:text-white">
               ເຂດຕາມຜັງເມືອງ:
             </label>
-            <input
-              type="text"
+            <select
               id="urbanizationlevel"
               name="urbanizationlevel"
               value={formData.urbanizationlevel}
               onChange={handleChange}
-              className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-            />
+              className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
+              disabled={urbanizationLoading}
+            >
+              <option value="">ເລືອກເຂດ</option>
+              {urbanizationLoading ? (
+                <option value="">ກຳລັງໂຫຼດ...</option>
+              ) : (
+                urbanization.map((level) => (
+                  <option key={level.id} value={level.id.toString()}>
+                    {level.name}
+                  </option>
+                ))
+              )}
+            </select>
           </div>
           
           <div className="form-group">
@@ -794,7 +627,7 @@ const LandForm = forwardRef<{ formData?: any }, {}>((props, ref) => {
             {isSaving ? "ກຳລັງບັນທຶກ..." : "ບັນທຶກ"}
           </button>
         </div>
-      </form>
+      </form>}
     </div>
   );
 });

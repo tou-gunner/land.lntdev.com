@@ -51,10 +51,10 @@ function DocumentsListContent() {
   const currentUser = useMemo(() => getCurrentUser(), []);
 
   useEffect(() => {
-    fetchAllParcelData();
-  }, [typeCurrentPage, formCurrentPage, itemsPerPage, selectedProvince, selectedDistrict, selectedVillage]);
+    fetchAllParcelData(activeTab);
+  }, [typeCurrentPage, formCurrentPage, itemsPerPage]);
 
-  const fetchAllParcelData = async () => {
+  const fetchAllParcelData = async (tab: TabType) => {
     try {
       setLoading(true);
       
@@ -64,7 +64,8 @@ function DocumentsListContent() {
         itemsPerPage,
         selectedProvince,
         selectedDistrict,
-        selectedVillage
+        selectedVillage,
+        username: currentUser?.user_name,
       });
       
       const formResult = await fetchParcelsForForm({
@@ -82,7 +83,7 @@ function DocumentsListContent() {
       setFormTotalItems(formResult.totalItems);
       
       // Set the current display based on active tab
-      if (activeTab === 'type') {
+      if (tab === 'type') {
         setParcels(typeResult.parcels);
         setTotalItems(typeResult.totalItems);
       } else {
@@ -100,6 +101,9 @@ function DocumentsListContent() {
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
+    setTypeCurrentPage(1);
+    setFormCurrentPage(1);
+    fetchAllParcelData(tab);
   };
 
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -129,7 +133,7 @@ function DocumentsListContent() {
     e.preventDefault();
     setTypeCurrentPage(1);
     setFormCurrentPage(1);
-    fetchAllParcelData();
+    fetchAllParcelData(activeTab);
   };
 
   const handleReset = () => {
@@ -138,7 +142,7 @@ function DocumentsListContent() {
     setSelectedVillage("");
     setTypeCurrentPage(1);
     setFormCurrentPage(1);
-    fetchAllParcelData();
+    fetchAllParcelData(activeTab);
   };
 
   const handleTypePageChange = (newPage: number) => {
@@ -153,7 +157,7 @@ function DocumentsListContent() {
     setItemsPerPage(Number(e.target.value));
     setTypeCurrentPage(1);
     setFormCurrentPage(1);
-    fetchAllParcelData();
+    fetchAllParcelData(activeTab);
   };
 
   // Calculate total pages for each tab

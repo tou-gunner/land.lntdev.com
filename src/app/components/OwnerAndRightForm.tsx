@@ -42,7 +42,7 @@ export default function OwnerAndRightForm() {
   //   }
   // };
 
-  if (!formData.gid || !formData?.landrights || formData.landrights.length === 0) {
+  if (!formData.gid || !formData?.landrights) {
     return <div className="p-4 text-center">Loading land rights data...</div>;
   }
 

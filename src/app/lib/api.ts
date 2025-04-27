@@ -86,10 +86,11 @@ export async function fetchParcels(params: {
       selectedProvince, 
       selectedDistrict, 
       selectedVillage,
+      username
     } = params;
     
     // Choose the endpoint based on the useInputEndpoint flag
-    const endpoint = "/parcels";
+    const endpoint = "/parcel/list_parcels_filter";
     
     // Construct the query URL with filters
     let url = `${API_BASE_URL}${endpoint}?page_no=${currentPage}&offset=${itemsPerPage}`;
@@ -97,7 +98,7 @@ export async function fetchParcels(params: {
     if (selectedProvince) url += `&province=${selectedProvince}`;
     if (selectedDistrict) url += `&district=${selectedDistrict}`;
     if (selectedVillage) url += `&village=${selectedVillage}`;
-    
+    if (username) url += `&user=${username}`;
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -165,7 +166,7 @@ export async function fetchParcelsForForm(params: {
     } = params;
     
     // Choose the endpoint based on the useInputEndpoint flag
-    const endpoint = "/parcels/input";
+    const endpoint = "/parcel/list_parcels_filter_input";
     
     // Construct the query URL with filters
     let url = `${API_BASE_URL}${endpoint}?page_no=${currentPage}&offset=${itemsPerPage}`;
@@ -254,7 +255,7 @@ export async function updateDocumentTypes(docTypes: DocTypeRequest[]) {
 export async function fetchPdfInfo(parcelId: string) {
   try {
     const apiBaseUrl = API_BASE_URL || '';
-    const pdfUrl = `${apiBaseUrl}/parcels/pdf?parcel=${parcelId}`;
+    const pdfUrl = `${apiBaseUrl}/parcel/pdf?parcel=${parcelId}`;
     
     const response = await fetch(pdfUrl);
     
@@ -272,7 +273,7 @@ export async function fetchPdfInfo(parcelId: string) {
 // Function to lock a parcel record for a user
 export async function lockParcelRecord(username: string, parcelId: string) {
   try {
-    const url = `${API_BASE_URL}/parcels/lock`;
+    const url = `${API_BASE_URL}/parcel/user_lock_record`;
     
     const response = await fetch(url, {
       method: 'POST',
@@ -303,203 +304,10 @@ export async function lockParcelRecord(username: string, parcelId: string) {
   }
 }
 
-// ----------------------
-// Utility and Reference Data Functions
-// ----------------------
-
-export async function fetchLandUseZones() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/utility/landusezone`, {
-      next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    const result = await response.json();
-    
-    if (result?.success && Array.isArray(result.data)) {
-      return transformApiItems(result.data);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error fetching land use zones:', error);
-    return [];
-  }
-}
-
-export async function fetchLandUseTypes() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/utility/landuse`, {
-      next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    const result = await response.json();
-    
-    if (result?.success && Array.isArray(result.data)) {
-      return transformApiItems(result.data);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error fetching land use types:', error);
-    return [];
-  }
-}
-
-export async function fetchRoadTypes() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/utility/streetcategories`, {
-      next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    const result = await response.json();
-    
-    if (result?.success && Array.isArray(result.data)) {
-      return transformApiItems(result.data);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error fetching road types:', error);
-    return [];
-  }
-}
-
-export async function fetchDisputeTypes() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/utility/ltstatus`, {
-      next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    const result = await response.json();
-    
-    if (result?.success && Array.isArray(result.data)) {
-      return transformApiItems(result.data);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error fetching dispute types:', error);
-    return [];
-  }
-}
-
-export async function fetchEntityTypes() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/utility/entitytypes`, {
-      next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    const result = await response.json();
-    
-    if (result?.success && Array.isArray(result.data)) {
-      return transformApiItems(result.data);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error fetching entity types:', error);
-    return [];
-  }
-}
-
-export async function fetchBusinessTypes() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/utility/businesstypes`, {
-      next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    const result = await response.json();
-    
-    if (result?.success && Array.isArray(result.data)) {
-      return transformApiItems(result.data);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error fetching business types:', error);
-    return [];
-  }
-}
-
-export async function fetchMinistries() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/utility/ministries`, {
-      next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    const result = await response.json();
-    
-    if (result?.success && Array.isArray(result.data)) {
-      return transformApiItems(result.data);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error fetching ministries:', error);
-    return [];
-  }
-}
-
-export async function fetchRightTypes() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/utility/righttypes`, {
-      next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    const result = await response.json();
-    
-    if (result?.success && Array.isArray(result.data)) {
-      return transformApiItems(result.data);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error fetching right types:', error);
-    return [];
-  }
-}
-
-export async function fetchLandTitleHistory() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/utility/lthistory`, {
-      next: { revalidate: 3600 } // Cache for 1 hour
-    });
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    const result = await response.json();
-    
-    if (result?.success && Array.isArray(result.data)) {
-      return transformApiItems(result.data);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error fetching land title history:', error);
-    return [];
-  }
-}
-
 // New function to search for land parcels
 export async function searchLandParcel(cadastreMapNo: string, parcelNo: string) {
   try {
-    const response = await fetch(`${API_BASE_URL}/parcel/find?parcelno=${parcelNo}&cadastremapno=${cadastreMapNo}`, {
+    const response = await fetch(`${API_BASE_URL}/parcel/parcel_info?parcelno=${parcelNo}&mapno=${cadastreMapNo}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

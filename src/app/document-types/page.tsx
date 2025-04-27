@@ -9,6 +9,7 @@ import { getCurrentUser } from "../lib/auth";
 import { withAuth } from "../components/AuthProvider";
 import Link from "next/link";
 import { useToast } from "../hooks/useToast";
+import { isSet } from "util/types";
 
 // Main component that uses searchParams
 function DocumentTypeUpdateContent() {
@@ -34,6 +35,9 @@ function DocumentTypeUpdateContent() {
 
   // Fetch document types from API
   const { data: documentTypes, isLoading: isLoadingDocTypes, error: docTypesError } = useGetDocumentTypesQuery();
+
+  // Find if current page is saved
+  const currentPageSaved = savedPages.find(page => page.page === currentPage);
 
   useEffect(() => {
     if (!parcelId) {
@@ -62,9 +66,9 @@ function DocumentTypeUpdateContent() {
         console.error('Error locking parcel record:', error);
         setMessage('ບໍ່ສາມາດລັອກເອກະສານຕອນດິນໄດ້. ກະລຸນາລອງໃໝ່ອີກຄັ້ງ.');
         // Redirect back to the documents list page after a short delay
-        setTimeout(() => {
-          router.push('/documents-list');
-        }, 3000);
+        // setTimeout(() => {
+        //   router.push('/documents-list');
+        // }, 3000);
       } finally {
         setIsLocking(false);
       }
@@ -247,9 +251,6 @@ function DocumentTypeUpdateContent() {
       </div>
     );
   }
-
-  // Find if current page is saved
-  const currentPageSaved = savedPages.find(page => page.page === currentPage);
 
   // Group document types by group for better organization in select
   const groupedDocTypes: {[key: string]: typeof documentTypes} = {};

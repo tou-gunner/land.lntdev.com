@@ -18,7 +18,7 @@ import { useToast } from "../hooks/useToast";
 import { useSaveEntityMutation } from "../redux/api/apiSlice";
 
 export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
-  // const { formData, updateFormData } = useFormContext();
+  
   const [owner, setOwner] = useState<Entity>(initialOwner);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
@@ -75,10 +75,10 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
       // Format the entity data according to the API requirements
       const entityData = {
         name: owner.name || null,
-        entitytype: entityTypes.find(type => type.id == owner.entitytype)?.name || null,
+        entitytype: owner.entitytype ? `${owner.entitytype}` : null,
         registrationno: owner.registrationno || null,
         registrationdate: owner.registrationdate || null,
-        businesstype: businessTypes.find(type => type.id == owner.businesstype)?.name || null,
+        businesstype: owner.businesstype ? `${owner.businesstype}` : null,
         nationality: owner.nationality || null,
         houseno: owner.houseno || null,
         road: owner.road || null,
@@ -86,10 +86,10 @@ export default function EntityForm({ owner: initialOwner }: { owner: Entity }) {
         village: owner.village || null,
         district: owner.district || null,
         province: owner.province || null,
-        title: titles.find(title => title.id == owner.title)?.name || "",
+        title: owner.title ? `${owner.title}` : null,
         gid: owner.gid || null,
-        government_workplace: ministries.find(ministry => ministry.id == owner.government_workplace)?.name || null,
-        isstate: owner.isstate || null,
+        government_workplace: owner.government_workplace ? `${owner.government_workplace}` : null,
+        isstate: owner.isstate === null ? null : `${owner.isstate}`,
         companyname: owner.companyname || null
       };
       

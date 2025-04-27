@@ -16,7 +16,7 @@ function DocumentFormsContent() {
   const searchParams = useSearchParams();
   const parcelParam = searchParams.get('parcel');
   const apiBaseUrl = '/api';
-  const pdfUrl = `${apiBaseUrl}/parcels/pdf?parcel=${parcelParam}`;
+  const pdfUrl = `${apiBaseUrl}/parcel/pdf?parcel=${parcelParam}`;
   const [splitLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const [message, setMessage] = useState<string>("");
   

@@ -19,7 +19,8 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: '/api/:path*', // Next.js API routes
+        // destination: '/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/:path*`,
       }
     ];
   },

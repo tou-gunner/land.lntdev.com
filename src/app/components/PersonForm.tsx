@@ -6,97 +6,20 @@ import {
   useGetProvincesQuery,
   useGetDistrictsQuery,
   useGetVillagesQuery,
-  useGetTitlesQuery
+  useGetTitlesQuery,
+  useSavePersonMutation
 } from "../redux/api/apiSlice";
+import { Person } from "../contexts/FormContext";
+import { useToast } from "../hooks/useToast";
 
-interface TransformedItem {
-  id: number | string;
-  name: string;
-  englishName?: string;
-}
+export default function PersonForm({owner: initialOwner}: {owner: Person}) {
 
-interface PersonFormData {
-  title: string;
-  firstname: string;
-  lastname: string;
-  birthdate: string;
-  nationality: string;
-  occupation: string;
-  idcardno: string;
-  idcarddate: string;
-  governmentplace: string;
-  familybookno: string;
-  fathername: string;
-  mothername: string;
-  spousename: string;
-  spousebirthdate: string;
-  spousefathername: string;
-  spousemothername: string;
-  spousenationality: string;
-  spouseoccupation: string;
-  province: string;
-  district: string;
-  village: string;
-  unit: string;
-  street: string;
-  houseno: string;
-}
+  const [owner, setOwner] = useState<Person>(initialOwner);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showToast } = useToast();
 
-interface PersonFormProps {
-  initialData?: Partial<PersonFormData>;
-  onSubmit: (data: PersonFormData) => void;
-  onCancel?: () => void;
-  title?: string;
-  formData?: any;
-  onChange?: (data: any) => void;
-}
-
-export default function PersonForm({
-  initialData = {},
-  onSubmit,
-  onCancel,
-  title = "ແບບຟອມຂໍ້ມູນບຸກຄົນ",
-  formData: propFormData,
-  onChange
-}: PersonFormProps) {
-  const [formData, setFormData] = useState<PersonFormData>({
-    title: "",
-    firstname: "",
-    lastname: "",
-    birthdate: "",
-    nationality: "",
-    occupation: "",
-    idcardno: "",
-    idcarddate: "",
-    governmentplace: "",
-    familybookno: "",
-    fathername: "",
-    mothername: "",
-    spousename: "",
-    spousebirthdate: "",
-    spousefathername: "",
-    spousemothername: "",
-    spousenationality: "",
-    spouseoccupation: "",
-    province: "",
-    district: "",
-    village: "",
-    unit: "",
-    street: "",
-    houseno: "",
-    ...initialData,
-    ...(propFormData || {}) // Initialize with propFormData if provided
-  });
-
-  // Update local state when prop changes
-  useEffect(() => {
-    if (propFormData) {
-      setFormData(prev => ({
-        ...prev,
-        ...propFormData
-      }));
-    }
-  }, [propFormData]);
+  // Create the saveEntity mutation hook
+  const [savePerson, { isLoading }] = useSavePersonMutation();
 
   // Use RTK Query hooks for data fetching
   const { data: ministries = [], isLoading: loadingMinistries } = useGetMinistriesQuery();
@@ -104,57 +27,92 @@ export default function PersonForm({
   
   // Use RTK Query hooks for location data
   const { data: provinces = [], isLoading: isLoadingProvinces } = useGetProvincesQuery();
-  const { data: districts = [], isLoading: isLoadingDistricts } = useGetDistrictsQuery(formData.province, {
-    skip: !formData.province
+  const { data: districts = [], isLoading: isLoadingDistricts } = useGetDistrictsQuery(owner.province, {
+    skip: !owner.province
   });
-  const { data: villages = [], isLoading: isLoadingVillages } = useGetVillagesQuery(formData.district, {
-    skip: !formData.district
+  const { data: villages = [], isLoading: isLoadingVillages } = useGetVillagesQuery(owner.district, {
+    skip: !owner.district
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     
-    let newFormData;
+    const updatedOwner = { ...owner };
     
-    // Reset dependent fields when parent field changes
+    // Handle cascading selection for location fields
     if (name === "province") {
-      newFormData = {
-        ...formData,
-        province: value,
-        district: "",
-        village: ""
-      };
+      updatedOwner[name] = value;
+      updatedOwner["district"] = "";
+      updatedOwner["village"] = "";
     } else if (name === "district") {
-      newFormData = {
-        ...formData,
-        district: value,
-        village: ""
-      };
+      updatedOwner[name] = value;
+      updatedOwner["village"] = "";
+    } else if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      updatedOwner[name] = checked;
     } else {
-      newFormData = {
-        ...formData,
-        [name]: value,
-      };
+      updatedOwner[name] = value;
     }
-    
-    setFormData(newFormData as PersonFormData);
-    
-    // Delay the onChange callback to the next tick to avoid simultaneous renders
-    if (onChange) {
-      setTimeout(() => {
-        onChange(newFormData);
-      }, 0);
-    }
+
+    // Update the context
+    setOwner(updatedOwner);
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Set submitting state
+    setIsSubmitting(true);
+    
+    try {
+      // Format the entity data according to the API requirements
+      const personData = {
+        title: owner.title ? `${owner.title}` : null,
+        firstname: owner.firstname,
+        lastname: owner.lastname,
+        birthdate: owner.birthdate,
+        nationality: owner.nationality,
+        occupation: owner.occupation,
+        idcardno: owner.idcardno,
+        idcarddate: owner.idcarddate,
+        governmentplace: owner.governmentplace ? `${owner.governmentplace}` : null,
+        familybookno: owner.familybookno,
+        fathername: owner.fathername,
+        mothername: owner.mothername,
+        spousename: owner.spousename,
+        spousebirthdate: owner.spousebirthdate,
+        spousefathername: owner.spousefathername,
+        spousemothername: owner.spousemothername,
+        spousenationality: owner.spousenationality,
+        spouseoccupation: owner.spouseoccupation,
+        province: owner.province,
+        district: owner.district,
+        village: owner.village,
+        unit: owner.unit,
+        street: owner.street,
+        houseno: owner.houseno,
+      };
+      
+      // Submit the data to the API
+      const response = await savePerson(personData).unwrap();
+      
+      // Show success notification
+      showToast.success("ບັນທຶກຂໍ້ມູນນິຕິບຸກຄົນສຳເລັດ");
+      
+      // Optional: Reset form or redirect
+      // setOwner(initialOwner); // Reset form
+      
+    } catch (error: any) {
+      console.error('Failed to save person:', error);
+      showToast.error(error.data?.message || "ບໍ່ສາມາດບັນທຶກຂໍ້ມູນໄດ້. ກະລຸນາລອງໃໝ່ອີກຄັ້ງ.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white dark:bg-gray-800 shadow-md rounded-lg border-2 border-gray-300 dark:border-gray-600">
-      <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">{title}</h2>
+      <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">ຟອມຂໍ້ມູນບຸກຄົນ</h2>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -165,7 +123,7 @@ export default function PersonForm({
             <select
               id="prefix"
               name="title"
-              value={formData.title}
+              value={owner.title}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingTitles}
@@ -190,7 +148,7 @@ export default function PersonForm({
             <input
               type="text"
               name="firstname"
-              value={formData.firstname}
+              value={owner.firstname}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               required
@@ -204,7 +162,7 @@ export default function PersonForm({
             <input
               type="text"
               name="lastname"
-              value={formData.lastname}
+              value={owner.lastname}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               required
@@ -220,7 +178,7 @@ export default function PersonForm({
             <input
               type="date"
               name="birthdate"
-              value={formData.birthdate}
+              value={owner.birthdate}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -233,7 +191,7 @@ export default function PersonForm({
             <input
               type="text"
               name="nationality"
-              value={formData.nationality}
+              value={owner.nationality}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -246,7 +204,7 @@ export default function PersonForm({
             <input
               type="text"
               name="occupation"
-              value={formData.occupation}
+              value={owner.occupation}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -261,7 +219,7 @@ export default function PersonForm({
             <input
               type="text"
               name="idcardno"
-              value={formData.idcardno}
+              value={owner.idcardno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -274,7 +232,7 @@ export default function PersonForm({
             <input
               type="date"
               name="idcarddate"
-              value={formData.idcarddate}
+              value={owner.idcarddate}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -288,7 +246,7 @@ export default function PersonForm({
             </label>
             <select
               name="governmentplace"
-              value={formData.governmentplace}
+              value={owner.governmentplace}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={loadingMinistries}
@@ -314,7 +272,7 @@ export default function PersonForm({
             <input
               type="text"
               name="familybookno"
-              value={formData.familybookno}
+              value={owner.familybookno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -329,7 +287,7 @@ export default function PersonForm({
             <input
               type="text"
               name="fathername"
-              value={formData.fathername}
+              value={owner.fathername}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -342,7 +300,7 @@ export default function PersonForm({
             <input
               type="text"
               name="mothername"
-              value={formData.mothername}
+              value={owner.mothername}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -359,7 +317,7 @@ export default function PersonForm({
             <input
               type="text"
               name="spousename"
-              value={formData.spousename}
+              value={owner.spousename}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -372,7 +330,7 @@ export default function PersonForm({
             <input
               type="date"
               name="spousebirthdate"
-              value={formData.spousebirthdate}
+              value={owner.spousebirthdate}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -387,7 +345,7 @@ export default function PersonForm({
             <input
               type="text"
               name="spousefathername"
-              value={formData.spousefathername}
+              value={owner.spousefathername}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -400,7 +358,7 @@ export default function PersonForm({
             <input
               type="text"
               name="spousemothername"
-              value={formData.spousemothername}
+              value={owner.spousemothername}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -415,7 +373,7 @@ export default function PersonForm({
             <input
               type="text"
               name="spousenationality"
-              value={formData.spousenationality}
+              value={owner.spousenationality}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -428,7 +386,7 @@ export default function PersonForm({
             <input
               type="text"
               name="spouseoccupation"
-              value={formData.spouseoccupation}
+              value={owner.spouseoccupation}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -444,7 +402,7 @@ export default function PersonForm({
             </label>
             <select
               name="province"
-              value={formData.province}
+              value={owner.province}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
               disabled={isLoadingProvinces}
@@ -468,10 +426,10 @@ export default function PersonForm({
             </label>
             <select
               name="district"
-              value={formData.district}
+              value={owner.district}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-              disabled={isLoadingDistricts || !formData.province}
+              disabled={isLoadingDistricts || !owner.province}
             >
               <option value="">ເລືອກເມືອງ</option>
               {isLoadingDistricts ? (
@@ -492,10 +450,10 @@ export default function PersonForm({
             </label>
             <select
               name="village"
-              value={formData.village}
+              value={owner.village}
               onChange={handleChange}
               className="form-select w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-              disabled={isLoadingVillages || !formData.district}
+              disabled={isLoadingVillages || !owner.district}
             >
               <option value="">ເລືອກບ້ານ</option>
               {isLoadingVillages ? (
@@ -519,7 +477,7 @@ export default function PersonForm({
             <input
               type="text"
               name="unit"
-              value={formData.unit}
+              value={owner.unit}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -532,7 +490,7 @@ export default function PersonForm({
             <input
               type="text"
               name="street"
-              value={formData.street}
+              value={owner.street}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -545,7 +503,7 @@ export default function PersonForm({
             <input
               type="text"
               name="houseno"
-              value={formData.houseno}
+              value={owner.houseno}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
             />
@@ -553,20 +511,12 @@ export default function PersonForm({
         </div>
         
         <div className="flex justify-end space-x-4 mt-8">
-          {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded shadow-sm transition-colors"
-            >
-              ຍົກເລີກ
-            </button>
-          )}
           <button
             type="submit"
+            disabled={isSubmitting || isLoading}
             className="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-6 rounded shadow-sm transition-colors"
           >
-            ບັນທຶກ
+            {isSubmitting || isLoading ? 'ກຳລັງບັນທຶກ...' : 'ບັນທຶກ'}
           </button>
         </div>
       </form>
