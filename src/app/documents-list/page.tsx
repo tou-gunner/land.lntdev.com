@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 import { apiSlice } from "../redux/api/apiSlice";
@@ -14,13 +14,26 @@ import { fetchParcels, fetchParcelsForForm, Parcel } from "../lib/api";
 type TabType = 'type' | 'form';
 
 function DocumentsListContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Get initial values from URL parameters or use defaults
+  const initialTab = (searchParams.get('tab') as TabType) || 'type';
+  const initialTypeCurrentPage = parseInt(searchParams.get('typePage') || '1');
+  const initialFormCurrentPage = parseInt(searchParams.get('formPage') || '1');
+  const initialItemsPerPage = parseInt(searchParams.get('perPage') || '10');
+  const initialProvince = searchParams.get('province') || '';
+  const initialDistrict = searchParams.get('district') || '';
+  const initialVillage = searchParams.get('village') || '';
+
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [totalItems, setTotalItems] = useState<number>(0);
   
   // Active tab state for switching between views
-  const [activeTab, setActiveTab] = useState<TabType>('type');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   
   // State for parcels for each tab
   const [typeParcels, setTypeParcels] = useState<Parcel[]>([]);
@@ -29,14 +42,14 @@ function DocumentsListContent() {
   const [formTotalItems, setFormTotalItems] = useState<number>(0);
   
   // Pagination states for each tab
-  const [typeCurrentPage, setTypeCurrentPage] = useState<number>(1);
-  const [formCurrentPage, setFormCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [typeCurrentPage, setTypeCurrentPage] = useState<number>(initialTypeCurrentPage);
+  const [formCurrentPage, setFormCurrentPage] = useState<number>(initialFormCurrentPage);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(initialItemsPerPage);
   
   // Search and filter states
-  const [selectedProvince, setSelectedProvince] = useState<string>("");
-  const [selectedDistrict, setSelectedDistrict] = useState<string>("");
-  const [selectedVillage, setSelectedVillage] = useState<string>("");
+  const [selectedProvince, setSelectedProvince] = useState<string>(initialProvince);
+  const [selectedDistrict, setSelectedDistrict] = useState<string>(initialDistrict);
+  const [selectedVillage, setSelectedVillage] = useState<string>(initialVillage);
   
   // Use RTK Query hooks from Redux
   const { data: provinces = [] } = apiSlice.useGetProvincesQuery();
@@ -50,9 +63,29 @@ function DocumentsListContent() {
   // Cache the current user with useMemo to avoid unnecessary retrieval on re-renders
   const currentUser = useMemo(() => getCurrentUser(), []);
 
+  // Function to update URL parameters
+  const updateUrlParams = () => {
+    const params = new URLSearchParams();
+    params.set('tab', activeTab);
+    params.set('typePage', typeCurrentPage.toString());
+    params.set('formPage', formCurrentPage.toString());
+    params.set('perPage', itemsPerPage.toString());
+    
+    if (selectedProvince) params.set('province', selectedProvince);
+    if (selectedDistrict) params.set('district', selectedDistrict);
+    if (selectedVillage) params.set('village', selectedVillage);
+    
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  // Effect to update URL when state changes
+  useEffect(() => {
+    updateUrlParams();
+  }, [activeTab, typeCurrentPage, formCurrentPage, itemsPerPage, selectedProvince, selectedDistrict, selectedVillage]);
+
   useEffect(() => {
     fetchAllParcelData(activeTab);
-  }, [typeCurrentPage, formCurrentPage, itemsPerPage]);
+  }, [typeCurrentPage, formCurrentPage, itemsPerPage, selectedProvince, selectedDistrict, selectedVillage]);
 
   const fetchAllParcelData = async (tab: TabType) => {
     try {
@@ -101,9 +134,6 @@ function DocumentsListContent() {
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    setTypeCurrentPage(1);
-    setFormCurrentPage(1);
-    fetchAllParcelData(tab);
   };
 
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -158,6 +188,22 @@ function DocumentsListContent() {
     setTypeCurrentPage(1);
     setFormCurrentPage(1);
     fetchAllParcelData(activeTab);
+  };
+
+  // Function to create links with return URL parameters
+  const createDocumentLink = (parcel: Parcel, path: string) => {
+    const params = new URLSearchParams();
+    params.set('parcel', parcel.barcode);
+    // Add return parameters
+    params.set('returnTab', activeTab);
+    params.set('returnTypePage', typeCurrentPage.toString());
+    params.set('returnFormPage', formCurrentPage.toString());
+    params.set('returnPerPage', itemsPerPage.toString());
+    if (selectedProvince) params.set('returnProvince', selectedProvince);
+    if (selectedDistrict) params.set('returnDistrict', selectedDistrict);
+    if (selectedVillage) params.set('returnVillage', selectedVillage);
+    
+    return `${path}?${params.toString()}`;
   };
 
   // Calculate total pages for each tab
@@ -349,7 +395,7 @@ function DocumentsListContent() {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-3">
                             <Link
-                              href={`/document-types?parcel=${parcel.barcode}`}
+                              href={createDocumentLink(parcel, '/document-types')}
                               className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                               title="ຈັດການເອກະສານຕອນດິນ"
                             >
@@ -457,7 +503,7 @@ function DocumentsListContent() {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-3">
                             <Link
-                              href={`/document-forms?parcel=${parcel.barcode}`}
+                              href={createDocumentLink(parcel, '/document-forms')}
                               className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                               title="ປ້ອນຂໍ້ມູນຕອນດິນ"
                             >

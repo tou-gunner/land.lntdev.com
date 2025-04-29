@@ -18,6 +18,16 @@ function DocumentTypeUpdateContent() {
   const parcelIdFromUrl = searchParams.get("parcel");
   const parcelId = parcelIdFromUrl;
   const { showToast } = useToast();
+  
+  // Get return parameters for back navigation
+  const returnTab = searchParams.get('returnTab') || 'type';
+  const returnTypePage = searchParams.get('returnTypePage') || '1';
+  const returnFormPage = searchParams.get('returnFormPage') || '1';
+  const returnPerPage = searchParams.get('returnPerPage') || '10';
+  const returnProvince = searchParams.get('returnProvince') || '';
+  const returnDistrict = searchParams.get('returnDistrict') || '';
+  const returnVillage = searchParams.get('returnVillage') || '';
+  
   // Get the user from storage using useMemo
   const user = useMemo(() => getCurrentUser(), []);
   
@@ -32,6 +42,20 @@ function DocumentTypeUpdateContent() {
   const [savedPages, setSavedPages] = useState<DocTypeRequest[]>([]);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isLocking, setIsLocking] = useState<boolean>(false);
+
+  // Function to navigate back to documents list with preserved filters
+  const handleBackToList = () => {
+    const params = new URLSearchParams();
+    params.set('tab', returnTab);
+    params.set('typePage', returnTypePage);
+    params.set('formPage', returnFormPage);
+    params.set('perPage', returnPerPage);
+    if (returnProvince) params.set('province', returnProvince);
+    if (returnDistrict) params.set('district', returnDistrict);
+    if (returnVillage) params.set('village', returnVillage);
+    
+    router.push(`/documents-list?${params.toString()}`);
+  };
 
   // Fetch document types from API
   const { data: documentTypes, isLoading: isLoadingDocTypes, error: docTypesError } = useGetDocumentTypesQuery();
@@ -226,12 +250,6 @@ function DocumentTypeUpdateContent() {
         <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md w-full max-w-md">
           <h1 className="text-2xl font-bold mb-4 text-center">ອັບເດດປະເພດເອກະສານ</h1>
           <p className="text-red-500 text-center">ບໍ່ມີລະຫັດຕອນດິນ. ກະລຸນາລະບຸລະຫັດຕອນດິນ.</p>
-          <Link
-            href="/documents-list"
-            className="mt-4 block w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-center"
-          >
-            ໄປທີ່ໜ້າຈັດການຂໍ້ມູນທີ່ດິນ
-          </Link>
         </div>
       </div>
     );
@@ -505,7 +523,9 @@ function DocumentTypeUpdateContent() {
                 <p className="text-gray-700 dark:text-gray-300 text-center">ກຳລັງໂຫຼດເອກະສານ...</p>
               </div>
             ) : (
-              <p className="text-red-500 text-center">{message || "ບໍ່ພົບຂໍ້ມູນເອກະສານ"}</p>
+              <>
+                <p className="text-red-500 text-center">{message || "ບໍ່ພົບຂໍ້ມູນເອກະສານ"}</p>
+              </>
             )}
           </div>
         </div>

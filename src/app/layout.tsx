@@ -10,6 +10,17 @@ import Navbar from "./components/Navbar";
 import { AuthProvider } from "./components/AuthProvider";
 import { usePathname } from "next/navigation";
 import ToastProvider from "./components/ToastProvider";
+import { Suspense } from "react";
+
+// Fallback for Navbar when it's loading
+function NavbarFallback() {
+  return (
+    <header className="sticky top-0 z-10 w-full p-4 flex justify-between items-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="h-10 w-32 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+      <div className="h-10 w-32 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+    </header>
+  );
+}
 
 // Wrapper component to handle conditional Navbar rendering
 function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -22,7 +33,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <ReduxProvider>
         <AuthProvider>
           <ThemeProvider defaultTheme="system" storageKey="land3-theme">
-            {!isLoginPage && <Navbar />}
+            {!isLoginPage && (
+              <Suspense fallback={<NavbarFallback />}>
+                <Navbar />
+              </Suspense>
+            )}
             <main className="mx-auto">{children}</main>
             <ToastProvider />
           </ThemeProvider>

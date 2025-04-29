@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { getCurrentUser, logout } from "../lib/auth";
 import { createPath } from "../lib/navigation";
 import { ThemeToggle } from "./ThemeToggle";
@@ -11,13 +11,41 @@ import {
   Files, 
   FileType2, 
   LogOut, 
-  LogIn 
+  LogIn,
+  ArrowLeft
 } from "lucide-react";
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
+
+  // Check if current page is document-types or document-forms
+  const isDocumentDetailPage = pathname.includes('/document-types') || pathname.includes('/document-forms');
+
+  // Get return parameters for back navigation if we're on a document detail page
+  const returnTab = searchParams.get('returnTab') || 'type';
+  const returnTypePage = searchParams.get('returnTypePage') || '1';
+  const returnFormPage = searchParams.get('returnFormPage') || '1';
+  const returnPerPage = searchParams.get('returnPerPage') || '10';
+  const returnProvince = searchParams.get('returnProvince') || '';
+  const returnDistrict = searchParams.get('returnDistrict') || '';
+  const returnVillage = searchParams.get('returnVillage') || '';
+
+  // Function to navigate back to documents list with preserved filters
+  const handleBackToList = () => {
+    const params = new URLSearchParams();
+    params.set('tab', returnTab);
+    params.set('typePage', returnTypePage);
+    params.set('formPage', returnFormPage);
+    params.set('perPage', returnPerPage);
+    if (returnProvince) params.set('province', returnProvince);
+    if (returnDistrict) params.set('district', returnDistrict);
+    if (returnVillage) params.set('village', returnVillage);
+    
+    router.push(`/documents-list?${params.toString()}`);
+  };
 
   useEffect(() => {
     // Check if user is logged in
@@ -45,8 +73,22 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-10 w-full p-4 flex justify-between items-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
       <div className="flex items-center space-x-4">
-        <div className="text-xl font-bold text-blue-800 dark:text-blue-400">
-          ລະບົບທີ່ດິນ
+        <div className="flex items-center">
+          <div className="text-xl font-bold text-blue-800 dark:text-blue-400">
+            {isDocumentDetailPage ? (
+              <div className="flex items-center">
+                <ArrowLeft size={24} />
+                <button 
+                  onClick={handleBackToList}
+                  className="text-base font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  ກັບຄືນໜ້າລາຍການ
+                </button>
+              </div>
+            ) : (
+              "ລະບົບທີ່ດິນ"
+            )}
+          </div>
         </div>
 
         {/* Navigation links */}

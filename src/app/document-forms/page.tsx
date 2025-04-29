@@ -20,8 +20,31 @@ function DocumentFormsContent() {
   const [splitLayout] = useState<'horizontal' | 'vertical'>('horizontal');
   const [message, setMessage] = useState<string>("");
   
+  // Get return parameters for back navigation
+  const returnTab = searchParams.get('returnTab') || 'type';
+  const returnTypePage = searchParams.get('returnTypePage') || '1';
+  const returnFormPage = searchParams.get('returnFormPage') || '1';
+  const returnPerPage = searchParams.get('returnPerPage') || '10';
+  const returnProvince = searchParams.get('returnProvince') || '';
+  const returnDistrict = searchParams.get('returnDistrict') || '';
+  const returnVillage = searchParams.get('returnVillage') || '';
+  
   // Get the user from storage using useMemo
   const user = useMemo(() => getCurrentUser(), []);
+  
+  // Function to navigate back to documents list with preserved filters
+  const handleBackToList = () => {
+    const params = new URLSearchParams();
+    params.set('tab', returnTab);
+    params.set('typePage', returnTypePage);
+    params.set('formPage', returnFormPage);
+    params.set('perPage', returnPerPage);
+    if (returnProvince) params.set('province', returnProvince);
+    if (returnDistrict) params.set('district', returnDistrict);
+    if (returnVillage) params.set('village', returnVillage);
+    
+    router.push(`/documents-list?${params.toString()}`);
+  };
   
   // Add logging when tab changes to verify state persistence
   const handleTabChange = (tab: 'land' | 'ownership') => {
@@ -77,7 +100,9 @@ function DocumentFormsContent() {
           <div className="flex justify-center items-center p-10">
             <div className="text-center">
               {message ? (
-                <p className="text-lg text-red-600 dark:text-red-300">{message}</p>
+                <>
+                  <p className="text-lg text-red-600 dark:text-red-300 mb-4">{message}</p>
+                </>
               ) : (
                 <>
                   <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>

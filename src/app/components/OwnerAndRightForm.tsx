@@ -95,14 +95,15 @@ export default function OwnerAndRightForm() {
           >
 
             {/* Owner Form */}
-            <div className="mb-8">
-              {landright.owner?.ownertype === OwnerType.PERSON ? (
-                <></>
-                // <PersonForm />
-              ) : (
-                <EntityForm owner={landright.owner} />
-              )}
-            </div>
+            {landright.owner && (
+              <div className="mb-8">
+                {landright.owner?.ownertype === OwnerType.PERSON ? (
+                  <PersonForm owner={landright.owner} />
+                ) : (
+                  <EntityForm owner={landright.owner} />
+                )}
+              </div>
+            )}
 
             {/* Land Right Form */}
             <div className="mt-6">

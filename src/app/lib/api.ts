@@ -231,7 +231,7 @@ export async function fetchParcelsForForm(params: {
 // Document type management functions
 export async function updateDocumentTypes(docTypes: DocTypeRequest[]) {
   try {
-    const response = await fetch(`${API_BASE_URL}/parcels/document-types`, {
+    const response = await fetch(`${API_BASE_URL}/parcel/pdf/update_document_type`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

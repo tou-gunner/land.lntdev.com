@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated } from "../lib/auth";
 import { createPath } from "../lib/navigation";
@@ -20,6 +20,8 @@ interface StatsData {
   totalCompleted: number;
   newToday: number;
   completedToday: number;
+  completedDocSort: number;
+  completedDataEntry: number;
 }
 
 interface ActivityData {
@@ -38,14 +40,16 @@ interface BarChartProps {
   data: ActivityData;
 }
 
-// Dashboard component
-export default function Dashboard() {
+// Dashboard content component
+function DashboardContent() {
   const router = useRouter();
   const [stats, setStats] = useState<StatsData>({
     totalDocuments: 235,
     totalCompleted: 180,
     newToday: 13,
-    completedToday: 8
+    completedToday: 8,
+    completedDocSort: 42,
+    completedDataEntry: 65
   });
 
   // Charts data
@@ -99,10 +103,16 @@ export default function Dashboard() {
           className="bg-success-light/10 dark:bg-success-dark/10"
         />
         <StatsCard 
-          title="ສ້າງໃໝ່ມື້ນີ້" 
-          value={stats.newToday} 
-          icon={<Plus size={24} className="text-info" />} 
+          title="ສຳເລັດຈັດເອກະສານ" 
+          value={stats.completedDocSort} 
+          icon={<FileText size={24} className="text-info" />} 
           className="bg-info-light/10 dark:bg-info-dark/10"
+        />
+        <StatsCard 
+          title="ສຳເລັດປ້ອນຂໍ້ມູນ" 
+          value={stats.completedDataEntry} 
+          icon={<Clock size={24} className="text-warning" />} 
+          className="bg-warning-light/10 dark:bg-warning-dark/10"
         />
         <StatsCard 
           title="ສຳເລັດມື້ນີ້" 
@@ -182,20 +192,18 @@ export default function Dashboard() {
               <thead>
                 <tr className="bg-neutral-100 dark:bg-neutral-800">
                   <th className="py-2 px-4 text-left">ID</th>
-                  <th className="py-2 px-4 text-left">ຊື່ເອກະສານ</th>
-                  <th className="py-2 px-4 text-left">ປະເພດ</th>
+                  <th className="py-2 px-4 text-left">ວຽກ</th>
                   <th className="py-2 px-4 text-left">ວັນທີ</th>
-                  <th className="py-2 px-4 text-left">ສະຖານະ</th>
+                  {/* <th className="py-2 px-4 text-left">ສະຖານະ</th> */}
                 </tr>
               </thead>
               <tbody>
                 {[1, 2, 3, 4, 5].map((_, index) => (
                   <tr key={index} className={index % 2 === 0 ? "bg-neutral-50 dark:bg-neutral-900" : ""}>
                     <td className="py-2 px-4">LND-{1000 + index}</td>
-                    <td className="py-2 px-4">ເອກະສານ {index + 1}</td>
-                    <td className="py-2 px-4">{["ທີ່ດິນ", "ສັນຍາ", "ໃບອະນຸຍາດ"][index % 3]}</td>
+                    <td className="py-2 px-4">{["ຈັດເອກະສານ", "ປ້ອນຂໍ້ມູນ"][index % 2]}</td>
                     <td className="py-2 px-4">{new Date().toLocaleDateString()}</td>
-                    <td className="py-2 px-4">
+                    {/* <td className="py-2 px-4">
                       <span className={`px-2 py-1 rounded text-xs ${
                         [
                           "bg-success-light/10 text-success", 
@@ -205,7 +213,7 @@ export default function Dashboard() {
                       }`}>
                         {["ສຳເລັດແລ້ວ", "ລໍຖ້າ", "ກຳລັງດຳເນີນການ"][index % 3]}
                       </span>
-                    </td>
+                    </td> */}
                   </tr>
                 ))}
               </tbody>
@@ -275,5 +283,14 @@ function SimpleBarChart({ data }: BarChartProps) {
         </div>
       ))}
     </div>
+  );
+}
+
+// Dashboard component with Suspense
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div className="flex justify-center p-8">Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 } 

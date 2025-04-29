@@ -57,7 +57,7 @@ export const logout = (): void => {
 // Function to login the user
 export const login = async (user_name: string, password: string): Promise<User | null> => {
   try {
-    const url = `/api/auth/login`;
+    const url = `/api/utility/login`;
     
     const response = await fetch(url, {
       method: 'POST',

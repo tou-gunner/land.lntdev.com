@@ -67,30 +67,34 @@ export default function PersonForm({owner: initialOwner}: {owner: Person}) {
     try {
       // Format the entity data according to the API requirements
       const personData = {
+        gid: owner.gid,
+        ownertype: "person",
+        name: owner.firstname || null,
+        surname: owner.lastname || null,
+        dateofbirth: owner.birthdate ? owner.birthdate.split('T')[0] : null,
+        nationality: owner.nationality || null,
+        occupation: owner.occupation || null,
+        houseno: owner.houseno || null,
+        road: owner.road || null,
+        unit: owner.unit || null,
+        village: owner.village || null,
+        district: owner.district || null,
+        province: owner.province || null,
+        idcardno: owner.idcardno || null,
+        dateidcard: owner.idcarddate ? owner.idcarddate.split('T')[0] : null,
         title: owner.title ? `${owner.title}` : null,
-        firstname: owner.firstname,
-        lastname: owner.lastname,
-        birthdate: owner.birthdate,
-        nationality: owner.nationality,
-        occupation: owner.occupation,
-        idcardno: owner.idcardno,
-        idcarddate: owner.idcarddate,
-        governmentplace: owner.governmentplace ? `${owner.governmentplace}` : null,
-        familybookno: owner.familybookno,
-        fathername: owner.fathername,
-        mothername: owner.mothername,
-        spousename: owner.spousename,
-        spousebirthdate: owner.spousebirthdate,
-        spousefathername: owner.spousefathername,
-        spousemothername: owner.spousemothername,
-        spousenationality: owner.spousenationality,
-        spouseoccupation: owner.spouseoccupation,
-        province: owner.province,
-        district: owner.district,
-        village: owner.village,
-        unit: owner.unit,
-        street: owner.street,
-        houseno: owner.houseno,
+        familybookno: owner.familybookno || null,
+        fathername: owner.fathername || null,
+        mothername: owner.mothername || null,
+        spousename: owner.spousename || null,
+        spousedateofbirth: owner.spousedateofbirth ? owner.spousedateofbirth.split('T')[0] : null,
+        spousefathername: owner.spousefathername || null,
+        spousemothername: owner.spousemothername || null,
+        spousenationality: owner.spousenationality || null,
+        spouseoccupation: owner.spouseoccupation || null,
+        government_workplace: owner.governmentplace ? `${owner.governmentplace}` : null,
+        // updated: owner.updated || null,
+        // exists_llr: owner.exists_llr || null
       };
       
       // Submit the data to the API
@@ -165,7 +169,6 @@ export default function PersonForm({owner: initialOwner}: {owner: Person}) {
               value={owner.lastname}
               onChange={handleChange}
               className="form-input w-full rounded border-2 border-gray-400 dark:border-gray-500 p-2 dark:bg-gray-700 dark:text-white"
-              required
             />
           </div>
         </div>

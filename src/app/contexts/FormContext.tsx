@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useCallback } from "react";
-import { fetchBusinessTypes, fetchTitles, fetchEntityTypes, fetchLandUseZones, fetchRightTypes, fetchMinistries, fetchLandUseTypes, fetchLandTitleHistory, fetchUrbanization, fetchRoadTypes } from "../redux/utils/queryUtils";
+import { fetchBusinessTypes, fetchTitles, fetchEntityTypes, fetchLandUseZones, fetchRightTypes, fetchMinistries, fetchLandUseTypes, fetchLandTitleHistory, fetchUrbanization, fetchRoadTypes, fetchProvinces, fetchDistricts, fetchVillages } from "../redux/utils/queryUtils";
 // Remove unused RTK query imports
 // import { useGetLandUseZonesQuery, useGetEntityTypesQuery, useGetBusinessTypesQuery, useGetMinistriesQuery, useGetTitlesQuery } from "../redux/api/apiSlice";
 
@@ -82,7 +82,7 @@ export interface LandRight {
   date_title_issued?: string;
   updated?: string;
   // Owner data
-  owner: Owner;
+  owner?: Owner | null;
   [key: string]: any;
 }
 
@@ -133,9 +133,9 @@ interface FormContextType {
 // Create the context with a default value
 const FormContext = createContext<FormContextType | undefined>(undefined);
 
-export const emptyOwner: Owner = {
+export const emptyEntity: Entity = {
   gid: "",
-  ownertype: "person",
+  ownertype: "entity",
   name: "",
   entitytype: "",
   registrationno: "",
@@ -153,6 +153,37 @@ export const emptyOwner: Owner = {
   isstate: false,
   updated: "",
   companyname: ""
+};
+
+export const emptyPerson: Person = {
+  gid: "",
+  ownertype: "person",
+  name: "",
+  surname: "",
+  dateofbirth: "",
+  nationality: "",
+  occupation: "",
+  houseno: "",
+  road: "",
+  unit: "",
+  village: "",
+  district: "",
+  province: "",
+  idcardno: "",
+  dateidcard: "",
+  title: "",
+  familybookno: "",
+  fathername: "",
+  mothername: "",
+  spousename: "",
+  spousedateofbirth: "",
+  spousefathername: "",
+  spousemothername: "",
+  spousenationality: "",
+  spouseoccupation: "",
+  government_workplace: "",
+  updated: "",
+  exists_llr: ""
 };
 
 export const emptyLandRight: LandRight = {
@@ -178,7 +209,7 @@ export const emptyLandRight: LandRight = {
   date_title_send_to_ponre: "",
   date_title_issued: "",
   updated: "",
-  owner: emptyOwner
+  owner: null
 };
 
 export const emptyFormData: FormData = {
@@ -205,7 +236,7 @@ export const emptyFormData: FormData = {
   road: "",
   barcode: "",
   gid: "",
-  landrights: [emptyLandRight]
+  landrights: []
 };
 
 // Hook to use the form context
@@ -223,13 +254,6 @@ export function FormProvider({ children }: { children: ReactNode }) {
   const [formData, setFormData] = useState<FormData>(emptyFormData);
 
   const [isGovernmentLand, setIsGovernmentLandState] = useState(false);
-  
-  // Remove these queries as they're now handled directly in the LandForm component
-  // const { data: landusezones = [], isLoading: zonesLoading } = useGetLandUseZonesQuery();
-  // const { data: entitytypes = [], isLoading: typesLoading } = useGetEntityTypesQuery();
-  // const { data: businessTypes = [], isLoading: businessTypesLoading } = useGetBusinessTypesQuery();
-  // const { data: ministries = [], isLoading: ministriesLoading } = useGetMinistriesQuery();
-  // const { data: titles = [], isLoading: titlesLoading } = useGetTitlesQuery();
   
   // Process parcel data with direct access to all required data
   const processParcelData = async (parcelData: any) => {
@@ -279,6 +303,25 @@ export function FormProvider({ children }: { children: ReactNode }) {
 
     if (parcelData.landrights) {
       for (const landRight of parcelData.landrights) {
+        let province = "";
+        let district = "";
+        let village = "";
+        if (landRight.owner) {
+          const provinces = await fetchProvinces();
+          province = provinces.find(province => province.id == landRight.owner.province)?.id ||
+            provinces.find(province => province.name == landRight.owner.province)?.id || "";
+          if (province) {
+            const districts = await fetchDistricts(province);
+            district = districts.find(district => district.id == landRight.owner.district)?.id ||
+              districts.find(district => district.name == landRight.owner.district)?.id || "";
+          }
+          if (district) {
+            const villages = await fetchVillages(district);
+            village = villages.find(village => village.id == landRight.owner.village)?.id ||
+              villages.find(village => village.name == landRight.owner.village)?.id || "";
+          }
+        }
+        
         const sanitizedLandRightData: LandRight = {
           gid: landRight.gid,
           parcelid: landRight.parcelid,
@@ -297,31 +340,31 @@ export function FormProvider({ children }: { children: ReactNode }) {
           history: historyTypes.find(type => type.id == landRight.history)?.id ||
             historyTypes.find(type => type.name == landRight.history)?.id || "",
           old_ownerid: landRight.old_ownerid || "",
-          valid_from: landRight.valid_from ? new Date(landRight.valid_from).toISOString().split('T')[0] : "",
-          valid_till: landRight.valid_till ? new Date(landRight.valid_till).toISOString().split('T')[0] : "",
-          date_conclusion: landRight.date_conclusion ? new Date(landRight.date_conclusion).toISOString().split('T')[0] : "",
-          date_title_printed: landRight.date_title_printed ? new Date(landRight.date_title_printed).toISOString().split('T')[0] : "",
-          date_public_display: landRight.date_public_display ? new Date(landRight.date_public_display).toISOString().split('T')[0] : "",
-          date_title_send_to_ponre: landRight.date_title_send_to_ponre ? new Date(landRight.date_title_send_to_ponre).toISOString().split('T')[0] : "",
-          date_title_issued: landRight.date_title_issued ? new Date(landRight.date_title_issued).toISOString().split('T')[0] : "",
+          valid_from: landRight.valid_from ? landRight.valid_from.split('T')[0] : "",
+          valid_till: landRight.valid_till ? landRight.valid_till.split('T')[0] : "",
+          date_conclusion: landRight.date_conclusion ? landRight.date_conclusion.split('T')[0] : "",
+          date_title_printed: landRight.date_title_printed ? landRight.date_title_printed.split('T')[0] : "",
+          date_public_display: landRight.date_public_display ? landRight.date_public_display.split('T')[0] : "",
+          date_title_send_to_ponre: landRight.date_title_send_to_ponre ? landRight.date_title_send_to_ponre.split('T')[0] : "",
+          date_title_issued: landRight.date_title_issued ? landRight.date_title_issued.split('T')[0] : "",
           updated: landRight.updated || "",
-          owner: {
+          owner: landRight.owner ? {
             gid: landRight.owner.gid,
             ownertype: landRight.owner.ownertype,
             name: landRight.owner.name,
             entitytype: entityTypes.find(type => type.id == landRight.owner.entitytype)?.id ||
               entityTypes.find(type => type.name == landRight.owner.entitytype)?.id || "",
             registrationno: landRight.owner.registrationno || "",
-            registrationdate: landRight.owner.registrationdate ? new Date(landRight.owner.registrationdate).toISOString().split('T')[0] : "",
+            registrationdate: landRight.owner.registrationdate ? landRight.owner.registrationdate.split('T')[0] : "",
             businesstype: businessTypes.find(type => type.id == landRight.owner.businesstype)?.id ||
               businessTypes.find(type => type.name == landRight.owner.businesstype)?.id || "",
             nationality: landRight.owner.nationality || "",
             houseno: landRight.owner.houseno || "",
             road: landRight.owner.road || "",
             unit: landRight.owner.unit || "",
-            village: landRight.owner.village || "",
-            district: landRight.owner.villagecode ? landRight.owner.villagecode.substring(0, 4) : "",
-            province: landRight.owner.villagecode ? landRight.owner.villagecode.substring(0, 2) : "",
+            village: village,
+            district: district,
+            province: province,
             title: titles.find(title => title.id == landRight.owner.title)?.id ||
               titles.find(title => title.name == landRight.owner.title)?.id || "",
             government_workplace: ministries.find(ministry => ministry.id == landRight.owner.government_workplace)?.id ||
@@ -329,7 +372,7 @@ export function FormProvider({ children }: { children: ReactNode }) {
             isstate: false,
             updated: landRight.owner.updated || "",
             companyname: landRight.owner.companyname || ""
-          }
+          } : null
         };
         sanitizedData.landrights.push(sanitizedLandRightData);
       }
