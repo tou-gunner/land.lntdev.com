@@ -1,0 +1,2264 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_202501 {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@map(" parcels_pdf_202501")
+  @@ignore
+}
+
+model address {
+  provincecode     String? @db.VarChar(4)
+  province_english String? @db.VarChar(50)
+  province_lao     String? @db.VarChar(50)
+  districtcode     String? @db.VarChar(2)
+  district_english String? @db.VarChar(50)
+  district_lao     String? @db.VarChar(50)
+  villagecode      String? @db.VarChar(4)
+  village_lao      String? @db.VarChar(50)
+  village_english  String? @db.VarChar(50)
+  utmzone          Int?
+  code             String? @db.VarChar(10)
+  gid              String  @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  topovill_id      String? @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+
+  @@index([code], map: "idx_address_code")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model address_tmp {
+  provincecode     String? @db.VarChar(4)
+  province_english String? @db.VarChar(50)
+  province_lao     String? @db.VarChar(50)
+  districtcode     String? @db.VarChar(2)
+  district_english String? @db.VarChar(50)
+  district_lao     String? @db.VarChar(50)
+  villagecode      String? @db.VarChar(4)
+  village_lao      String? @db.VarChar(50)
+  village_english  String? @db.VarChar(50)
+  utmzone          Int?
+  code             String? @db.VarChar(10)
+  gid              String  @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  topovill_id      String? @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+
+  @@ignore
+}
+
+model addressnew {
+  province_lao String? @db.VarChar(50)
+  district_lao String? @db.VarChar(50)
+  village_lao  String? @db.VarChar(50)
+  code         String  @id @db.VarChar(10)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model audit_tracking {
+  tx_date   DateTime @default(now()) @db.Timestamptz(6)
+  user_name String?  @db.VarChar(20)
+  tbl_name  String?  @db.Char(35)
+  actions   String?  @db.Char(1)
+  col_name  String?  @db.VarChar(250)
+  new_value String?  @db.VarChar(500)
+  criteria  String?  @db.VarChar(150)
+  nos       Int      @default(autoincrement())
+
+  @@ignore
+}
+
+model barcodes {
+  barcode_id     String    @id(map: "pk_barcode_id") @db.Char(50)
+  barcode_status String?   @db.Char(1)
+  province       String?   @db.Char(2)
+  district       String?   @db.Char(4)
+  village        String?   @db.Char(7)
+  mapno          String?   @db.VarChar(12)
+  parcelno       String?   @db.VarChar(4)
+  gid            String?   @db.Uuid
+  addressid      String?   @db.Uuid
+  province_lao   String?   @db.VarChar(50)
+  district_lao   String?   @db.VarChar(50)
+  village_lao    String?   @db.VarChar(50)
+  received       DateTime? @db.Date
+  received_time  DateTime? @db.Timestamp(6)
+  scanned        DateTime? @db.Date
+  scanned_time   DateTime? @db.Timestamp(6)
+  kiedin         DateTime? @db.Date
+  kiedin_time    DateTime? @db.Timestamp(6)
+  drawing        DateTime? @db.Date
+  drawing_time   DateTime? @db.Timestamp(6)
+  qc1            DateTime? @db.Date
+  qc1_time       DateTime? @db.Timestamp(6)
+  qc2            DateTime? @db.Date
+  qc2_time       DateTime? @db.Timestamp(6)
+  qc3            DateTime? @db.Date
+  qc3_time       DateTime? @db.Timestamp(6)
+  qc4            DateTime? @db.Date
+  qc5_time       DateTime? @db.Timestamp(6)
+  qc6            DateTime? @db.Date
+  qc6_time       DateTime? @db.Timestamp(6)
+  qc7            DateTime? @db.Date
+  qc7_time       DateTime? @db.Timestamp(6)
+  qc8            DateTime? @db.Date
+  qc8_time       DateTime? @db.Timestamp(6)
+  qc9            DateTime? @db.Date
+  qc9_time       DateTime? @db.Timestamp(6)
+  qc10           DateTime? @db.Date
+  qc10_time      DateTime? @db.Timestamp(6)
+  qc11           DateTime? @db.Date
+  qc11_time      DateTime? @db.Timestamp(6)
+  qc12           DateTime? @db.Date
+  qc12_time      DateTime? @db.Timestamp(6)
+  counted_scann  String    @default("N") @db.Char(1)
+  counted_keidin String    @default("N") @db.Char(1)
+  counted_pggrp  String    @default("N") @db.Char(1)
+
+  @@index([barcode_id], map: "idx_barcodes_barcode_id")
+  @@index([counted_pggrp], map: "idx_cnt_grpng")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model barcodes_reg {
+  barcode  String  @db.VarChar(35)
+  province String? @db.VarChar(2)
+  district String? @db.VarChar(4)
+  village  String? @db.VarChar(7)
+
+  @@ignore
+}
+
+model configures {
+  conf_name  String  @id @db.VarChar(50)
+  conf_value String? @db.VarChar(100)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model current_keyin_village {
+  conf_name  String  @db.VarChar(50)
+  conf_value String? @db.VarChar(100)
+
+  @@ignore
+}
+
+model daily_report {
+  tx_date  DateTime @db.Date
+  received Int?
+  scanned  Int?
+  keying   Int?
+  drawing  Int?
+  linking  Int?
+  returned Int?
+  province String?  @db.VarChar(2)
+  district String?  @db.VarChar(4)
+  village  String   @db.VarChar(7)
+  grouping Int?
+
+  @@id([tx_date, village])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model daily_report_bk00 {
+  tx_date  DateTime? @db.Date
+  received Int?
+  scanned  Int?
+  keying   Int?
+  drawing  Int?
+  linking  Int?
+  returned Int?
+  province String?   @db.VarChar(2)
+  district String?   @db.VarChar(4)
+  village  String?   @db.VarChar(7)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model daily_report_bk_0103 {
+  tx_date  DateTime? @db.Date
+  received Int?
+  scanned  Int?
+  keying   Int?
+  drawing  Int?
+  linking  Int?
+  returned Int?
+  province String?   @db.VarChar(2)
+  district String?   @db.VarChar(4)
+  village  String?   @db.VarChar(7)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model daily_report_bk_20250225 {
+  tx_date  DateTime? @db.Date
+  received Int?
+  scanned  Int?
+  keying   Int?
+  drawing  Int?
+  linking  Int?
+  returned Int?
+  province String?   @db.VarChar(2)
+  district String?   @db.VarChar(4)
+  village  String?   @db.VarChar(7)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model daily_report_bk_20250305 {
+  tx_date  DateTime? @db.Date
+  received Int?
+  scanned  Int?
+  keying   Int?
+  drawing  Int?
+  linking  Int?
+  returned Int?
+  province String?   @db.VarChar(2)
+  district String?   @db.VarChar(4)
+  village  String?   @db.VarChar(7)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model daily_report_keying_0103 {
+  keying   BigInt?
+  province String? @db.VarChar(2)
+  district String? @db.VarChar(4)
+  village  String? @db.VarChar(7)
+
+  @@ignore
+}
+
+model daily_reports {
+  tx_date  DateTime @db.Date
+  received Int?
+  scanned  Int?
+  keying   Int?
+  drawing  Int?
+  linking  Int?
+  returned Int?
+  province String?  @db.VarChar(2)
+  district String?  @db.VarChar(4)
+  village  String   @db.VarChar(7)
+  grouping Int?
+
+  @@id([tx_date, village])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model daily_reports_bk_20250225 {
+  tx_date  DateTime? @db.Date
+  received Int?
+  scanned  Int?
+  keying   Int?
+  drawing  Int?
+  linking  Int?
+  returned Int?
+  province String?   @db.VarChar(2)
+  district String?   @db.VarChar(4)
+  village  String?   @db.VarChar(7)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model daily_reports_bk_20250305 {
+  tx_date  DateTime? @db.Date
+  received Int?
+  scanned  Int?
+  keying   Int?
+  drawing  Int?
+  linking  Int?
+  returned Int?
+  province String?   @db.VarChar(2)
+  district String?   @db.VarChar(4)
+  village  String?   @db.VarChar(7)
+
+  @@ignore
+}
+
+model doc_types {
+  doc_type        Int     @id
+  description_lao String? @db.VarChar(150)
+  docgroup_code   Int?
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model doc_types_group {
+  group_id    Int
+  group_name  String? @db.VarChar(150)
+  object_name String? @db.VarChar(59)
+
+  @@ignore
+}
+
+model entity {
+  name                 String?   @db.VarChar(100)
+  entitytype           String?   @db.VarChar(50)
+  registrationno       String?   @db.VarChar(32)
+  registrationdate     DateTime? @db.Timestamp(6)
+  businesstype         String?   @db.VarChar(32)
+  nationality          String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  title                String?   @db.VarChar(10)
+  gid                  String    @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  government_workplace String?   @db.VarChar(100)
+  isstate              Boolean?
+  updated              DateTime? @db.Timestamp(6)
+  companyname          String?   @db.VarChar(100)
+}
+
+model landdocs {
+  nos          Int     @id
+  doc_name     String? @db.VarChar(100)
+  doc_name_lao String? @db.VarChar(200)
+  doctype      String? @db.VarChar(5)
+}
+
+model landrights {
+  old_ownerid              Int?
+  part                     String?   @db.VarChar(10)
+  history                  String?   @db.VarChar(50)
+  righttype                String?   @db.VarChar(50)
+  landregisterbookno       String?   @db.VarChar(24)
+  titlenumber              String?   @db.VarChar(50)
+  titleeditionno           String?   @db.VarChar(16)
+  landrightcategory        String?   @db.VarChar(24)
+  landregistersheetno      String?
+  stateland                Boolean?  @default(false)
+  gid                      String    @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  parcelid                 String    @db.Uuid
+  ownerid                  String    @db.Uuid
+  barcode                  String?   @db.VarChar
+  valid_from               DateTime? @default(now()) @db.Timestamp(6)
+  valid_till               DateTime? @default(dbgenerated("'2100-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(6)
+  date_conclusion          DateTime? @db.Timestamp(6)
+  date_title_printed       DateTime? @db.Timestamp(6)
+  date_public_display      DateTime? @db.Timestamp(6)
+  date_title_send_to_ponre DateTime? @db.Timestamp(6)
+  date_title_issued        DateTime? @db.Timestamp(6)
+  updated                  DateTime? @db.Timestamp(6)
+
+  @@index([old_ownerid], map: "idx_owner")
+}
+
+model parcel {
+  parcelno             String?   @db.VarChar(5)
+  cadastremapno        String?   @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?   @db.VarChar(64)
+  road                 String?   @db.VarChar(64)
+  unit                 String?   @db.VarChar(32)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  purpose              String?   @db.VarChar(100)
+  additionalstatements String?   @db.VarChar
+  status               Int?
+  area                 Float?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?   @db.VarChar(7)
+  isstate              Boolean?  @default(false)
+  owner_check          String?
+  cadastremapno_old    String?   @db.VarChar(20)
+  gid                  String    @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  valid_from           DateTime? @default(now()) @db.Timestamp(6)
+  valid_till           DateTime? @default(dbgenerated("'2100-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(6)
+  history              String[]  @db.Uuid
+  urbanizationlevel    String?   @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime? @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?   @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  barcode              String?   @unique(map: "idx_parcel_barcode") @db.Char(50)
+  exists_llr           String?   @db.Char(1)
+  snd_parcel2_llr      String    @default("N") @db.Char(1)
+  concat_pages         String    @default("N") @db.Char(1)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel02 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?                 @default(false)
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String                   @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  valid_from           DateTime?                @default(now()) @db.Timestamp(6)
+  valid_till           DateTime?                @default(dbgenerated("'2100-01-01 00:00:00'::timestamp without time zone")) @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel03 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel04 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel05 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel06 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel07 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel08 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel09 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel10 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel11 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel12 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel13 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel14 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel15 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel16 {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+model parcel_docs {
+  sort_no       Int?
+  gid           String   @db.Uuid
+  id            Int
+  pages         Int?
+  prepred_check Boolean?
+  scann_check   Boolean?
+  return_check  Boolean?
+  barcode       String?  @db.VarChar(35)
+
+  @@id([gid, id])
+}
+
+model parcel_stages {
+  sort_no    Int?
+  gid        String    @db.Uuid
+  stage_id   String    @db.VarChar(10)
+  stage_date DateTime? @db.Timestamp(6)
+  user_name  String?   @db.VarChar(35)
+  stage_desc String?   @db.VarChar(100)
+
+  @@id([gid, stage_id])
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel_temp {
+  parcel String? @db.VarChar(50)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcel_tmp {
+  tmp_id               String?   @db.Uuid
+  parcelno             String?   @db.Char(5)
+  cadastremapno        String?   @db.VarChar(20)
+  landuse              Int?
+  landusezone          String?   @db.VarChar(64)
+  road                 String?   @db.VarChar(64)
+  unit                 String?   @db.VarChar(32)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  purpose              String?   @db.VarChar(100)
+  additionalstatements String?   @db.VarChar
+  status               Int?
+  area                 Float?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?   @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?   @db.VarChar(20)
+  gid                  String?   @db.Uuid
+  valid_from           DateTime? @db.Timestamp(6)
+  valid_till           DateTime? @db.Timestamp(6)
+  history              String[]  @db.Uuid
+  urbanizationlevel    String?   @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime? @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?   @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  road_reserve         Int?
+  survey_source        Int?
+  address_id           String?   @db.Uuid
+  qualitystatus        Int?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_draw {
+  parcelno      String @db.VarChar(5)
+  cadastremapno String @db.VarChar(20)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_draw_dup {
+  parcelno      String? @db.VarChar(5)
+  cadastremapno String? @db.VarChar(20)
+  dupl          BigInt?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_inout {
+  barcode      String    @db.VarChar(35)
+  province     String?   @db.VarChar(2)
+  district     String?   @db.VarChar(4)
+  village      String?   @db.VarChar(7)
+  date_receive DateTime? @db.Timestamp(6)
+  date_return  DateTime? @db.Timestamp(6)
+  received     Int       @default(0)
+  returned     Int       @default(0)
+  team         Int?
+  boxno        String?   @db.VarChar(5)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf {
+  file_name        String    @db.VarChar(150)
+  province_code    String?   @db.VarChar(2)
+  district_code    String?   @db.VarChar(4)
+  village_code     String?   @db.VarChar(7)
+  doc_seq          Int?
+  date_scan        DateTime? @db.Date
+  scanner_id       String?   @db.VarChar(10)
+  doc_type         Int?
+  parcelno         String?   @db.VarChar(5)
+  mapno            String?   @db.VarChar(13)
+  parcel           String?   @db.VarChar(80)
+  rotate           Int       @default(0)
+  user_name        String?   @db.VarChar(20)
+  ready2keyin      String    @default("N") @db.Char(1)
+  pages_group_by   String?   @db.VarChar(20)
+  pages_group_stat String?   @default("N") @db.Char(1)
+  date_upload      DateTime  @default(now()) @db.Timestamp(6)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf2 {
+  file_name     String?   @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(35)
+  rotate        Int?
+  user_name     String?   @db.VarChar(20)
+  ready2keyin   String?   @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf3 {
+  file_name     String?   @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(50)
+  rotate        Int?
+  user_name     String?   @db.VarChar(20)
+  ready2keyin   String?   @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf3_dup {
+  file_name     String?   @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(50)
+  rotate        Int?
+  user_name     String?   @db.VarChar(20)
+  ready2keyin   String?   @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_00 {
+  file_name     String?   @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(28)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_0830 {
+  file_name     String?   @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(28)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_0908 {
+  file_name     String?   @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(28)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_0910 {
+  file_name     String?   @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(28)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_0912 {
+  file_name     String?   @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(28)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_0915 {
+  file_name     String?   @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(28)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_0922 {
+  file_name     String?   @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(28)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_202411 {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_202411_dupl {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_202412 {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_202412_dupl {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_202501 {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_fail {
+  file_name     String    @db.VarChar(50)
+  province_code String?   @db.VarChar(2)
+  district_code String?   @db.VarChar(4)
+  village_code  String?   @db.VarChar(7)
+  doc_seq       Int?
+  date_scan     DateTime? @db.Date
+  scanner_id    String?   @db.VarChar(10)
+  doc_type      Int?
+  parcelno      String?   @db.VarChar(5)
+  mapno         String?   @db.VarChar(13)
+  parcel        String?   @db.VarChar(28)
+
+  @@ignore
+}
+
+model parcels_pdf_prefilter {
+  province_code    String?  @db.VarChar(2)
+  district_code    String?  @db.VarChar(4)
+  village_code     String?  @db.VarChar(7)
+  parcel           String   @id @db.VarChar(50)
+  user_name        String?  @db.VarChar(20)
+  file_name        String?
+  ready2keyin      String?  @db.Char(1)
+  pages_group_stat String?  @db.Char(1)
+  date_upload      DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([province_code, district_code, village_code, parcel, user_name], map: "idx_parcel_pdf_prefilter")
+  @@index([pages_group_stat], map: "idx_parcel_pdf_prefilter_pgrptstatus")
+  @@index([ready2keyin], map: "idx_parcel_pdf_prefilter_ready2keyin")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model parcels_pdf_temp {
+  file_name        String    @db.VarChar(50)
+  province_code    String?   @db.VarChar(2)
+  district_code    String?   @db.VarChar(4)
+  village_code     String?   @db.VarChar(7)
+  doc_seq          Int?
+  date_scan        DateTime? @db.Date
+  scanner_id       String?   @db.VarChar(10)
+  doc_type         Int?
+  parcel           String?   @db.VarChar(50)
+  rotate           Int?
+  ready2keyin      String?   @db.Char(1)
+  pages_group_stat String?   @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model pdfs {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model pdfs2 {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model pdfs2_dup {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model pdfs3 {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model pdfs4 {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model pdfs_dup {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model pdfss {
+  file_name  String?
+  scanner_id String?
+  bck_date   String?
+
+  @@ignore
+}
+
+model person {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String    @id @default(dbgenerated("public.uuid_generate_v4()")) @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person02 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person03 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person04 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person05 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person06 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person07 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person08 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person09 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person10 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person11 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person12 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person13 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person14 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person15 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person16 {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model person_tmp {
+  tmp_id               String?   @db.Uuid
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  address_id           String?   @db.Uuid
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model send_kon {
+  id_0       Int                      @default(autoincrement())
+  geom       Unsupported("geometry")?
+  parcelno   String?                  @db.VarChar(5)
+  cadastrema String?                  @db.VarChar(20)
+  landusetyp BigInt?
+  landusezon String?                  @db.VarChar(64)
+  road       String?                  @db.VarChar(96)
+  unit       String?                  @db.VarChar(33)
+  village    String?                  @db.VarChar(76)
+  district   String?                  @db.VarChar(50)
+  province   String?                  @db.VarChar(50)
+  villagecod String?                  @db.VarChar(7)
+  roadtype   BigInt?
+  updated    String?                  @db.VarChar(24)
+  id         BigInt?
+  surveyor   String?                  @db.VarChar(50)
+  surveyingd String?                  @db.VarChar(64)
+  importdate String?                  @db.VarChar(24)
+  surveyingt String?                  @db.VarChar(50)
+  error_desc String?                  @db.VarChar(254)
+  X          Float?
+  Y          Float?
+  layer      String?                  @db.VarChar(254)
+  path       String?                  @db.VarChar(254)
+  merge      String?                  @db.VarChar(80)
+  Finished_2 String?                  @db.VarChar(254)
+  check_Fini String?                  @db.VarChar(254)
+  Check_not  String?                  @db.VarChar(254)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model send_kon2 {
+  id_0       Int                      @default(autoincrement())
+  geom       Unsupported("geometry")?
+  parcelno   String?                  @db.VarChar(5)
+  cadastrema String?                  @db.VarChar(20)
+  landusetyp BigInt?
+  landusezon String?                  @db.VarChar(64)
+  road       String?                  @db.VarChar(96)
+  unit       String?                  @db.VarChar(33)
+  village    String?                  @db.VarChar(76)
+  district   String?                  @db.VarChar(50)
+  province   String?                  @db.VarChar(50)
+  villagecod String?                  @db.VarChar(7)
+  roadtype   BigInt?
+  updated    String?                  @db.VarChar(24)
+  id         BigInt?
+  surveyor   String?                  @db.VarChar(50)
+  surveyingd String?                  @db.VarChar(64)
+  importdate String?                  @db.VarChar(24)
+  surveyingt String?                  @db.VarChar(50)
+  error_desc String?                  @db.VarChar(254)
+  X          Float?
+  Y          Float?
+  layer      String?                  @db.VarChar(254)
+  path       String?                  @db.VarChar(254)
+  merge      String?                  @db.VarChar(80)
+  Finished_2 String?                  @db.VarChar(254)
+  check_Fini String?                  @db.VarChar(254)
+  Check_not  String?                  @db.VarChar(254)
+
+  @@ignore
+}
+
+model users {
+  user_name  String  @id @db.VarChar(20)
+  full_name  String? @db.VarChar(50)
+  pwd        String? @db.VarChar(50)
+  tel        String? @db.VarChar(10)
+  responsive String? @db.VarChar(50)
+  role_id    Int?
+  group_id   Int?
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model z_entity {
+  name                 String?   @db.VarChar(100)
+  entitytype           String?   @db.VarChar(50)
+  registrationno       String?   @db.VarChar(32)
+  registrationdate     DateTime? @db.Timestamp(6)
+  businesstype         String?   @db.VarChar(32)
+  nationality          String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  government_workplace String?   @db.VarChar(100)
+  isstate              Boolean?
+  updated              DateTime? @db.Timestamp(6)
+  companyname          String?   @db.VarChar(100)
+  act                  String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model z_landrights {
+  old_ownerid              Int?
+  part                     String?   @db.VarChar(10)
+  history                  String?   @db.VarChar(50)
+  righttype                String?   @db.VarChar(50)
+  landregisterbookno       String?   @db.VarChar(24)
+  titlenumber              String?   @db.VarChar(50)
+  titleeditionno           String?   @db.VarChar(16)
+  landrightcategory        String?   @db.VarChar(24)
+  landregistersheetno      String?
+  stateland                Boolean?
+  gid                      String?   @db.Uuid
+  parcelid                 String?   @db.Uuid
+  ownerid                  String?   @db.Uuid
+  barcode                  String?   @db.VarChar
+  valid_from               DateTime? @db.Timestamp(6)
+  valid_till               DateTime? @db.Timestamp(6)
+  date_conclusion          DateTime? @db.Timestamp(6)
+  date_title_printed       DateTime? @db.Timestamp(6)
+  date_public_display      DateTime? @db.Timestamp(6)
+  date_title_send_to_ponre DateTime? @db.Timestamp(6)
+  date_title_issued        DateTime? @db.Timestamp(6)
+  updated                  DateTime? @db.Timestamp(6)
+  act                      String?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model z_parcel {
+  parcelno             String?                  @db.Char(5)
+  cadastremapno        String?                  @db.VarChar(20)
+  landusetype          Int?
+  landusezone          String?                  @db.VarChar(64)
+  road                 String?                  @db.VarChar(64)
+  unit                 String?                  @db.VarChar(32)
+  village              String?                  @db.VarChar(50)
+  district             String?                  @db.VarChar(50)
+  province             String?                  @db.VarChar(50)
+  purpose              String?                  @db.VarChar(100)
+  additionalstatements String?                  @db.VarChar
+  status               Int?
+  area                 Float?
+  geom                 Unsupported("geometry")?
+  perimeter            Float?
+  Name                 String?
+  Description          String?
+  geoid                String?
+  villagecode          String?                  @db.VarChar(7)
+  isstate              Boolean?
+  owner_check          String?
+  cadastremapno_old    String?                  @db.VarChar(20)
+  gid                  String?                  @db.Uuid
+  valid_from           DateTime?                @db.Timestamp(6)
+  valid_till           DateTime?                @db.Timestamp(6)
+  history              String[]                 @db.Uuid
+  urbanizationlevel    String?                  @db.VarChar(256)
+  landvaluezone_number Int?
+  roadtype             Int?
+  updated              DateTime?                @db.Timestamp(6)
+  app_type             Int?
+  parcelno_old         String?                  @db.Char(5)
+  placeholder_geometry Boolean?
+  agrisurvey           Boolean?
+  act                  String?                  @db.Char(1)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model z_person {
+  name                 String?   @db.VarChar(100)
+  surname              String?   @db.VarChar(100)
+  dateofbirth          String?   @db.VarChar(50)
+  nationality          String?   @db.VarChar(50)
+  occupation           String?   @db.VarChar(50)
+  houseno              String?   @db.VarChar(5)
+  road                 String?   @db.VarChar(50)
+  unit                 String?   @db.VarChar(50)
+  village              String?   @db.VarChar(50)
+  district             String?   @db.VarChar(50)
+  province             String?   @db.VarChar(50)
+  idcardno             String?   @db.VarChar(32)
+  dateidcard           DateTime? @db.Timestamp(6)
+  title                String?   @db.VarChar(10)
+  gid                  String?   @db.Uuid
+  familybookno         String?   @db.VarChar(50)
+  fathername           String?   @db.VarChar(50)
+  mothername           String?   @db.VarChar(50)
+  spousename           String?   @db.VarChar(50)
+  spousedateofbirth    String?   @db.VarChar(50)
+  spousefathername     String?   @db.VarChar(50)
+  spousemothername     String?   @db.VarChar(50)
+  spousenationality    String?   @db.VarChar(50)
+  spouseoccupation     String?   @db.VarChar(50)
+  government_workplace String?   @db.VarChar(100)
+  updated              DateTime? @db.Timestamp(6)
+  exists_llr           String?   @db.Char(1)
+  act                  String?
+
+  @@ignore
+}
